@@ -1,0 +1,358 @@
+﻿@{
+    ViewBag.Title = "Home";
+}
+
+<!-- banner section start -->
+      <div class="banner_section layout_padding">
+         <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+            <div class="carousel-inner">
+               <div class="carousel-item active">
+                  <div class="container">
+                     <div class="row">
+                        <div class="col-sm-6">
+                           <h1 class="banner_taital">Quality <br>Products</h1>
+                           <p class="banner_text">Discover our exclusive collection of skincare products inspired by Moldovan beauty traditions and modern technologies.</p>
+                           <div class="read_bt"><a href="#">Shop Now</a></div>
+                        </div>
+                        <div class="col-sm-6">
+                           <div class="banner_img"><img src="~/Content/images/banner-img.png"></div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <div class="carousel-item">
+                  <div class="container">
+                     <div class="row">
+                        <div class="col-sm-6">
+                           <h1 class="banner_taital">Natural <br>Care</h1>
+                           <p class="banner_text">Our products contain natural extracts from plants grown in Moldova, known for their therapeutic and beautifying properties.</p>
+                           <div class="read_bt"><a href="#">Shop Now</a></div>
+                        </div>
+                        <div class="col-sm-6">
+                           <div class="banner_img"><img src="~/Content/images/banner-img.png"></div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <div class="carousel-item">
+                  <div class="container">
+                     <div class="row">
+                        <div class="col-sm-6">
+                           <h1 class="banner_taital">Beauty <br>Ritual</h1>
+                           <p class="banner_text">Transform your daily routine into a beauty ritual with our premium products, created to enhance the natural beauty of your skin.</p>
+                           <div class="read_bt"><a href="#">Shop Now</a></div>
+                        </div>
+                        <div class="col-sm-6">
+                           <div class="banner_img"><img src="~/Content/images/banner-img.png"></div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+               <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+               <span class="sr-only">Previous</span>
+            </a>
+            <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+               <span class="carousel-control-next-icon" aria-hidden="true"></span>
+               <span class="sr-only">Next</span>
+            </a>
+         </div>
+      </div>
+      <!-- banner section end -->
+
+      <!-- about us section start -->
+      <div class="about_section layout_padding">
+         <div class="container">
+            <div class="row">
+               <div class="col-md-6">
+                  <div class="about_img"><img src="~/Content/images/about-img.png"></div>
+               </div>
+               <div class="col-md-6">
+                  <div class="about_taital_main">
+                     <h1 class="about_taital">About Beauty Moldova</h1>
+                     <p class="about_text">Beauty Moldova is a brand created with passion for beauty and respect for local traditions. We aim to offer high-quality cosmetic products that combine natural ingredients from Moldova with modern production technologies.</p>
+                     <p class="about_text">Our mission is to bring to your homes products that not only care for your skin, but also celebrate natural beauty and local care traditions.</p>
+                     <div class="readmore_bt"><a href="#">Learn More</a></div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- about us section end -->
+      
+      <!-- product section start -->
+      <div class="product_section layout_padding">
+         <div class="container">
+            <div class="row">
+               <div class="col-sm-12">
+                  <h1 class="product_taital">Our Products</h1>
+                  <p class="product_text">Discover our collection of premium cosmetic products, created from natural ingredients and formulated to provide exceptional results.</p>
+               </div>
+            </div>
+            <div class="product_section_2 layout_padding">
+               <div class="row">
+                  <div class="col-lg-3 col-sm-6">
+                     <div class="product_box">
+                        <h4 class="bursh_text">Moisturizing Cream</h4>
+                        <p class="lorem_text">With Moldovan lavender extract and almond oil for deep hydration.</p>
+                        <img src="~/Content/images/img-1.png" class="image_1">
+                        <div class="btn_main">
+                           <div class="buy_bt">
+                              <ul>
+                                 <li class="active"><a href="#" onclick="addToCart(1)">Add to Cart</a></li>
+                                 <li><a href="#">Details</a></li>
+                              </ul>
+                           </div>
+                           <h3 class="price_text">Price 250 MDL</h3>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-lg-3 col-sm-6">
+                     <div class="product_box">
+                        <h4 class="bursh_text">Facial Mask</h4>
+                        <p class="lorem_text">With Orhei clay and medicinal plant extracts for clean and bright skin.</p>
+                        <img src="~/Content/images/img-2.png" class="image_1">
+                        <div class="btn_main">
+                           <div class="buy_bt">
+                              <ul>
+                                 <li class="active"><a href="#" onclick="addToCart(2)">Add to Cart</a></li>
+                                 <li><a href="#">Details</a></li>
+                              </ul>
+                           </div>
+                           <h3 class="price_text">Price 180 MDL</h3>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-lg-3 col-sm-6">
+                     <div class="product_box">
+                        <h4 class="bursh_text">Facial Serum</h4>
+                        <p class="lorem_text">With hyaluronic acid and Moldovan grape extract for firm and elastic skin.</p>
+                        <img src="~/Content/images/img-3.png" class="image_1">
+                        <div class="btn_main">
+                           <div class="buy_bt">
+                              <ul>
+                                 <li class="active"><a href="#" onclick="addToCart(3)">Add to Cart</a></li>
+                                 <li><a href="#">Details</a></li>
+                              </ul>
+                           </div>
+                           <h3 class="price_text">Price 320 MDL</h3>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-lg-3 col-sm-6">
+                     <div class="product_box">
+                        <h4 class="bursh_text">Natural Exfoliant</h4>
+                        <p class="lorem_text">With apricot seeds and Călărași walnut oil for gentle and effective exfoliation.</p>
+                        <img src="~/Content/images/img-4.png" class="image_1">
+                        <div class="btn_main">
+                           <div class="buy_bt">
+                              <ul>
+                                 <li class="active"><a href="#" onclick="addToCart(4)">Add to Cart</a></li>
+                                 <li><a href="#">Details</a></li>
+                              </ul>
+                           </div>
+                           <h3 class="price_text">Price 210 MDL</h3>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <div class="row">
+                  <div class="col-lg-3 col-sm-6">
+                     <div class="product_box">
+                        <h4 class="bursh_text">Essential Oil</h4>
+                        <p class="lorem_text">Essential sage oil, organically grown in the southern regions of Moldova.</p>
+                        <img src="~/Content/images/img-5.png" class="image_1">
+                        <div class="btn_main">
+                           <div class="buy_bt">
+                              <ul>
+                                 <li class="active"><a href="#" onclick="addToCart(5)">Add to Cart</a></li>
+                                 <li><a href="#">Details</a></li>
+                              </ul>
+                           </div>
+                           <h3 class="price_text">Price 150 MDL</h3>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-lg-3 col-sm-6">
+                     <div class="product_box">
+                        <h4 class="bursh_text">Hand Cream</h4>
+                        <p class="lorem_text">With shea butter and beeswax from local Codru beekeeping.</p>
+                        <img src="~/Content/images/img-6.png" class="image_1">
+                        <div class="btn_main">
+                           <div class="buy_bt">
+                              <ul>
+                                 <li class="active"><a href="#" onclick="addToCart(6)">Add to Cart</a></li>
+                                 <li><a href="#">Details</a></li>
+                              </ul>
+                           </div>
+                           <h3 class="price_text">Price 120 MDL</h3>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-lg-3 col-sm-6">
+                     <div class="product_box">
+                        <h4 class="bursh_text">Micellar Water</h4>
+                        <p class="lorem_text">With rose water from Căpriana and chamomile extract for gentle cleansing.</p>
+                        <img src="~/Content/images/img-7.png" class="image_1">
+                        <div class="btn_main">
+                           <div class="buy_bt">
+                              <ul>
+                                 <li class="active"><a href="#" onclick="addToCart(7)">Add to Cart</a></li>
+                                 <li><a href="#">Details</a></li>
+                              </ul>
+                           </div>
+                           <h3 class="price_text">Price 145 MDL</h3>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-lg-3 col-sm-6">
+                     <div class="product_box">
+                        <h4 class="bursh_text">Lip Balm</h4>
+                        <p class="lorem_text">With Moldovan organic honey and olive oil for velvety, hydrated lips.</p>
+                        <img src="~/Content/images/img-8.png" class="image_1">
+                        <div class="btn_main">
+                           <div class="buy_bt">
+                              <ul>
+                                 <li class="active"><a href="#" onclick="addToCart(8)">Add to Cart</a></li>
+                                 <li><a href="#">Details</a></li>
+                              </ul>
+                           </div>
+                           <h3 class="price_text">Price 95 MDL</h3>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- product section end -->
+      
+      <!-- client section start -->
+      <div class="client_section layout_padding">
+         <div class="container">
+            <div class="row">
+               <div class="col-sm-12">
+                  <h1 class="client_taital">What Our Customers Say</h1>
+                  <p class="client_text">We are proud to present our customers' opinions about Beauty Moldova products</p>
+               </div>
+            </div>
+         </div>
+         <div id="carouselExampleIndicators-2" class="carousel slide" data-ride="carousel">
+            <div class="carousel-inner">
+               <div class="carousel-item active">
+                  <div class="client_section_2">
+                     <div class="container">
+                        <div class="row">
+                           <div class="col-md-12">
+                              <div class="testimonial_section_2">
+                                 <h4 class="client_name_text">Maria Popescu <span class="quick_icon"><img src="~/Content/images/quick-icon.png"></span></h4>
+                                 <p class="customer_text">"I've been using Beauty Moldova products for over a year and I'm very satisfied with the results. The moisturizing cream with lavender extract is my favorite, it has a wonderful scent and leaves my skin velvety. I recommend it with confidence!"</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <div class="carousel-item">
+                  <div class="client_section_2">
+                     <div class="container">
+                        <div class="row">
+                           <div class="col-md-12">
+                              <div class="testimonial_section_2">
+                                 <h4 class="client_name_text">Ion Rusu <span class="quick_icon"><img src="~/Content/images/quick-icon.png"></span></h4>
+                                 <p class="customer_text">"I rarely write reviews, but Beauty Moldova products deserve it. I gave my wife the facial serum with grape extract as a gift, and she says it's the best she's ever used. The results were visible after just a week of use!"</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <div class="carousel-item">
+                  <div class="client_section_2">
+                     <div class="container">
+                        <div class="row">
+                           <div class="col-md-12">
+                              <div class="testimonial_section_2">
+                                 <h4 class="client_name_text">Elena Cojocaru <span class="quick_icon"><img src="~/Content/images/quick-icon.png"></span></h4>
+                                 <p class="customer_text">"I appreciate that Beauty Moldova products are made with ingredients grown in our country. The hand cream with beeswax from Codru has a delicate scent and has helped me a lot, especially in winter when my skin tends to dry out."</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <a class="carousel-control-prev" href="#carouselExampleIndicators-2" role="button" data-slide="prev">
+               <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+               <span class="sr-only">Previous</span>
+            </a>
+            <a class="carousel-control-next" href="#carouselExampleIndicators-2" role="button" data-slide="next">
+               <span class="carousel-control-next-icon" aria-hidden="true"></span>
+               <span class="sr-only">Next</span>
+            </a>
+         </div>
+      </div>
+      <!-- client section end -->
+
+<script>
+function addToCart(productId) {
+    // In a real application, this would call an API endpoint to add the product to the cart
+    // For demo purposes, we'll just simulate adding the product to the cart using localStorage
+    
+    let item = {
+        id: productId,
+        qty: 1
+    };
+    
+    // Get product details based on the productId
+    switch(productId) {
+        case 1:
+            item.name = "Moisturizing Cream";
+            item.price = 250;
+            item.img = "img-1.png";
+            break;
+        case 2:
+            item.name = "Facial Mask";
+            item.price = 180;
+            item.img = "img-2.png";
+            break;
+        case 3:
+            item.name = "Facial Serum";
+            item.price = 320;
+            item.img = "img-3.png";
+            break;
+        case 4:
+            item.name = "Natural Exfoliant";
+            item.price = 210;
+            item.img = "img-4.png";
+            break;
+        case 5:
+            item.name = "Essential Oil";
+            item.price = 150;
+            item.img = "img-5.png";
+            break;
+        case 6:
+            item.name = "Hand Cream";
+            item.price = 120;
+            item.img = "img-6.png";
+            break;
+        case 7:
+            item.name = "Micellar Water";
+            item.price = 145;
+            item.img = "img-7.png";
+            break;
+        case 8:
+            item.name = "Lip Balm";
+            item.price = 95;
+            item.img = "img-8.png";
+            break;
+    }
+    
+    // Add item to cart
+    addItemToCart(item);
+    
+    // Show success message
+    alert('Product has been added to cart!');
+}
+</script>

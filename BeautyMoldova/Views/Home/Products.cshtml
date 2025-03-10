@@ -1,0 +1,212 @@
+﻿@model IEnumerable<BeautyMoldova.Domain.Models.Product>
+
+@{
+ViewBag.Title = "Products";
+}
+
+<div class="bg-white py-12">
+   <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+         <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Наши Продукты</h1>
+         <p class="text-lg text-gray-600 max-w-3xl mx-auto">Откройте для себя нашу коллекцию премиальных косметических продуктов, созданных из натуральных ингредиентов Молдовы и разработанных для исключительных результатов.</p>
+      </div>
+      
+      <!-- Фильтр категорий -->
+      <div class="mb-10">
+         <div class="flex flex-wrap justify-center gap-3">
+            <button class="filter-btn active bg-pink-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-pink-600 transition-colors" data-filter="all">Все</button>
+            <button class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-pink-500 hover:text-white transition-colors" data-filter="fata">Уход за лицом</button>
+            <button class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-pink-500 hover:text-white transition-colors" data-filter="corp">Уход за телом</button>
+            <button class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-pink-500 hover:text-white transition-colors" data-filter="par">Уход за волосами</button>
+            <button class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-pink-500 hover:text-white transition-colors" data-filter="machiaj">Макияж</button>
+         </div>
+      </div>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+         @foreach (var product in Model)
+         {
+            <div class="product-item transition-all duration-300 transform hover:-translate-y-1" data-category="@(product.Category?.Name?.ToLower() ?? "all")">
+               <div class="bg-white rounded-lg shadow-md overflow-hidden h-full flex flex-col">
+                  <div class="relative overflow-hidden" style="padding-top: 100%;">
+                     <img src="~/Content/images/@(product.MainImage ?? "default-product.jpg")" 
+                          class="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
+                          alt="@product.Name">
+                     
+                     @if (product.AddedDate >= DateTime.Now.AddDays(-30))
+                     {
+                        <span class="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">Новинка</span>
+                     }
+                     
+                     @if (product.DiscountPrice.HasValue && product.DiscountPrice < product.Price)
+                     {
+                        var discountPercent = Math.Round((1 - product.DiscountPrice.Value / product.Price) * 100);
+                        <span class="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">-@discountPercent%</span>
+                     }
+                     
+                     <div class="absolute bottom-0 right-0 p-2 flex space-x-1">
+                        <button onclick="addToWishlist(@product.Id)" class="bg-white bg-opacity-80 hover:bg-pink-500 text-pink-500 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                           <i class="far fa-heart"></i>
+                        </button>
+                        <a href="@Url.Action("ProductDetails", "Home", new { id = product.Id })" class="bg-white bg-opacity-80 hover:bg-pink-500 text-pink-500 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                           <i class="fas fa-eye"></i>
+                        </a>
+                     </div>
+                  </div>
+                  
+                  <div class="p-4 flex-grow flex flex-col">
+                     <h3 class="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">@product.Name</h3>
+                     
+                     <p class="text-gray-600 text-sm mb-3 line-clamp-2">
+                        @(string.IsNullOrEmpty(product.Description) 
+                           ? "Высококачественный косметический продукт" 
+                           : product.Description.Substring(0, Math.Min(100, product.Description.Length)) + (product.Description.Length > 100 ? "..." : ""))
+                     </p>
+                     
+                     <div class="mt-auto">
+                        <div class="flex justify-between items-center mb-2">
+                           <div class="flex items-center">
+                              @{
+                                 var avgRating = product.Reviews != null && product.Reviews.Any() 
+                                    ? Math.Round(product.Reviews.Average(r => r.Rating)) 
+                                    : 0;
+                                 var reviewCount = product.Reviews?.Count ?? 0;
+                              }
+                              
+                              @for (int i = 1; i <= 5; i++)
+                              {
+                                 if (i <= avgRating)
+                                 {
+                                    <i class="fas fa-star text-yellow-400 text-sm"></i>
+                                 }
+                                 else
+                                 {
+                                    <i class="far fa-star text-gray-300 text-sm"></i>
+                                 }
+                              }
+                              <span class="text-gray-500 text-xs ml-1">(@reviewCount)</span>
+                           </div>
+                           
+                           @if (product.StockQuantity > 10)
+                           {
+                              <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">В наличии</span>
+                           }
+                           else if (product.StockQuantity > 0)
+                           {
+                              <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Мало</span>
+                           }
+                           else
+                           {
+                              <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Нет в наличии</span>
+                           }
+                        </div>
+                        
+                        <div class="flex justify-between items-center mb-3">
+                           <div>
+                              @if (product.DiscountPrice.HasValue && product.DiscountPrice < product.Price)
+                              {
+                                 <div class="flex items-baseline">
+                                    <span class="text-lg font-bold text-pink-600">@product.DiscountPrice MDL</span>
+                                    <span class="text-sm text-gray-400 line-through ml-2">@product.Price MDL</span>
+                                 </div>
+                              }
+                              else
+                              {
+                                 <span class="text-lg font-bold text-gray-800">@product.Price MDL</span>
+                              }
+                           </div>
+                        </div>
+                        
+                        <button onclick="addToCart(@product.Id, '@product.Name', @(product.DiscountPrice ?? product.Price), '@(product.MainImage ?? "default-product.jpg")')" 
+                                class="w-full bg-pink-500 hover:bg-pink-600 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
+                           <i class="fas fa-shopping-cart mr-2"></i> В корзину
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         }
+      </div>
+   </div>
+</div>
+
+<script>
+   $(document).ready(function() {
+      // Фильтр продуктов по категориям
+      $('.filter-btn').click(function() {
+         $('.filter-btn').removeClass('active bg-pink-500 text-white').addClass('bg-gray-200 text-gray-700');
+         $(this).removeClass('bg-gray-200 text-gray-700').addClass('active bg-pink-500 text-white');
+         
+         var selectedFilter = $(this).data('filter');
+         
+         if (selectedFilter === 'all') {
+            $('.product-item').show();
+         } else {
+            $('.product-item').hide();
+            $('.product-item[data-category="' + selectedFilter + '"]').show();
+         }
+      });
+   });
+</script>
+
+<style>
+/* Стиль для анимации добавления в корзину */
+.cart_notification {
+   position: fixed;
+   top: 20px;
+   right: 20px;
+   background-color: #4CAF50;
+   color: white;
+   padding: 15px 25px;
+   border-radius: 5px;
+   font-weight: 600;
+   z-index: 9999;
+   opacity: 0;
+   transform: translateY(-20px);
+   transition: all 0.3s ease;
+   box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.cart_notification.show {
+   opacity: 1;
+   transform: translateY(0);
+}
+</style>
+
+<script>
+function addToCart(productId, name, price, image) {
+   // Get current cart from localStorage or create empty array
+   let cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+   
+   // Check if product already exists in cart
+   const existingItem = cartItems.find(item => item.id === productId);
+   
+   if (existingItem) {
+      existingItem.qty += 1;
+   } else {
+      cartItems.push({
+         id: productId,
+         name: name,
+         price: price,
+         image: image,
+         qty: 1
+      });
+   }
+   
+   // Save updated cart
+   localStorage.setItem('cartItems', JSON.stringify(cartItems));
+   
+   // Show success message
+   alert('Product has been added to cart!');
+   
+   // Refresh cart UI if needed
+   if (typeof loadCartItems === 'function') {
+      loadCartItems();
+   }
+}
+
+function addToWishlist(productId) {
+   // This would be implemented to save to user's wishlist
+   // For demo, just show a message
+   alert('Product has been added to favorites!');
+}
+</script>

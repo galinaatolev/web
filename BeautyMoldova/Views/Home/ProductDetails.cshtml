@@ -1,0 +1,867 @@
+﻿@model BeautyMoldova.Domain.Models.Product
+
+@{
+    ViewBag.Title = Model.Name;
+}
+
+<div class="product_details_section layout_padding">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="product_images">
+                    <div class="main_image">
+                        <img src="~/Content/images/@(Model.MainImage ?? "default-product.jpg")" alt="@Model.Name" class="img-fluid" id="mainProductImage">
+                    </div>
+                    
+                    @if (Model.AdditionalImages != null && Model.AdditionalImages.Any())
+                    {
+                        <div class="thumbnail_images">
+                            <div class="thumbnail active" data-img="@Model.MainImage">
+                                <img src="~/Content/images/@(Model.MainImage ?? "default-product.jpg")" alt="@Model.Name" class="img-fluid">
+                            </div>
+                            
+                            @foreach (var image in Model.AdditionalImages.OrderBy(i => i.DisplayOrder))
+                            {
+                                <div class="thumbnail" data-img="@image.ImageUrl">
+                                    <img src="~/Content/images/@image.ImageUrl" alt="@image.AltText" class="img-fluid">
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="product_info">
+                    <div class="breadcrumbs">
+                        <a href="@Url.Action("Index", "Home")">Acasă</a> >
+                        <a href="@Url.Action("Products", "Home")">Produse</a> >
+                        <a href="@Url.Action("Products", "Home", new { category = Model.Category?.Id })">@(Model.Category?.Name ?? "Categoria")</a> >
+                        <span>@Model.Name</span>
+                    </div>
+                    
+                    <h1 class="product_title">@Model.Name</h1>
+                    
+                    <div class="product_meta">
+                        <div class="manufacturer">
+                            <span class="label">Brand:</span>
+                            <a href="@Url.Action("Products", "Home", new { manufacturer = Model.Manufacturer?.Id })">@(Model.Manufacturer?.Name ?? "Brand Necunoscut")</a>
+                        </div>
+                        
+                        <div class="sku">
+                            <span class="label">SKU:</span>
+                            <span>@Model.SKU</span>
+                        </div>
+                        
+                        <div class="product_rating">
+                            @{
+                                var avgRating = Model.Reviews != null && Model.Reviews.Any() 
+                                    ? Math.Round(Model.Reviews.Average(r => r.Rating)) 
+                                    : 0;
+                                var reviewCount = Model.Reviews?.Count ?? 0;
+                            }
+                            
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= avgRating)
+                                {
+                                    <i class="fas fa-star"></i>
+                                }
+                                else
+                                {
+                                    <i class="far fa-star"></i>
+                                }
+                            }
+                            <a href="#reviews" class="review_count">(@reviewCount recenzii)</a>
+                        </div>
+                    </div>
+                    
+                    <div class="product_price">
+                        @if (Model.DiscountPrice.HasValue && Model.DiscountPrice < Model.Price)
+                        {
+                            <span class="old_price">@Model.Price MDL</span>
+                            <span class="current_price">@Model.DiscountPrice MDL</span>
+                            
+                            var discountPercent = Math.Round((1 - Model.DiscountPrice.Value / Model.Price) * 100);
+                            <span class="discount_badge">-@discountPercent%</span>
+                        }
+                        else
+                        {
+                            <span class="current_price">@Model.Price MDL</span>
+                        }
+                    </div>
+                    
+                    <div class="product_description">
+                        <p>@Model.Description</p>
+                    </div>
+                    
+                    <div class="product_stock">
+                        @if (Model.StockQuantity > 10)
+                        {
+                            <span class="in_stock"><i class="fas fa-check-circle"></i> În Stoc</span>
+                        }
+                        else if (Model.StockQuantity > 0)
+                        {
+                            <span class="limited_stock"><i class="fas fa-exclamation-circle"></i> Stoc Limitat (doar @Model.StockQuantity disponibile)</span>
+                        }
+                        else
+                        {
+                            <span class="out_of_stock"><i class="fas fa-times-circle"></i> Stoc Epuizat</span>
+                        }
+                    </div>
+                    
+                    <div class="add_to_cart_section">
+                        <div class="quantity_selector">
+                            <button class="qty_btn minus" id="decreaseQty">-</button>
+                            <input type="number" id="quantity" name="quantity" value="1" min="1" max="@Model.StockQuantity">
+                            <button class="qty_btn plus" id="increaseQty">+</button>
+                        </div>
+                        
+                        <button class="add_to_cart_btn" id="addToCartBtn" @(Model.StockQuantity <= 0 ? "disabled" : "")>
+                            <i class="fas fa-shopping-cart"></i> Adaugă în coș
+                        </button>
+                        
+                        <button class="wishlist_btn" id="addToWishlistBtn">
+                            <i class="far fa-heart"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="additional_info">
+                        @if (!string.IsNullOrEmpty(Model.SkinType))
+                        {
+                            <div class="info_item">
+                                <span class="label">Tip de piele:</span>
+                                <span class="value">@Model.SkinType</span>
+                            </div>
+                        }
+                        
+                        @if (Model.Size.HasValue && !string.IsNullOrEmpty(Model.SizeUnit))
+                        {
+                            <div class="info_item">
+                                <span class="label">Cantitate:</span>
+                                <span class="value">@Model.Size @Model.SizeUnit</span>
+                            </div>
+                        }
+                        
+                        @if (Model.Weight.HasValue)
+                        {
+                            <div class="info_item">
+                                <span class="label">Greutate:</span>
+                                <span class="value">@Model.Weight g</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="product_tabs">
+            <ul class="nav nav-tabs" id="productTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="description-tab" data-toggle="tab" href="#description" role="tab">Descriere</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="howto-tab" data-toggle="tab" href="#howto" role="tab">Mod de Utilizare</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="ingredients-tab" data-toggle="tab" href="#ingredients" role="tab">Ingrediente</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="reviews-tab" data-toggle="tab" href="#reviews" role="tab">Recenzii (@reviewCount)</a>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="productTabsContent">
+                <div class="tab-pane fade show active" id="description" role="tabpanel">
+                    <div class="tab_content">
+                        <p>@Model.Description</p>
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="howto" role="tabpanel">
+                    <div class="tab_content">
+                        <p>@(string.IsNullOrEmpty(Model.HowToUse) ? "Nu există informații despre modul de utilizare pentru acest produs." : Model.HowToUse)</p>
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="ingredients" role="tabpanel">
+                    <div class="tab_content">
+                        <p>@(string.IsNullOrEmpty(Model.Ingredients) ? "Nu există informații despre ingrediente pentru acest produs." : Model.Ingredients)</p>
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="reviews" role="tabpanel">
+                    <div class="tab_content">
+                        <div class="reviews_summary">
+                            <div class="average_rating">
+                                <div class="rating_value">@avgRating</div>
+                                <div class="rating_stars">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= avgRating)
+                                        {
+                                            <i class="fas fa-star"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="far fa-star"></i>
+                                        }
+                                    }
+                                </div>
+                                <div class="rating_count">(@reviewCount recenzii)</div>
+                            </div>
+                            
+                            <div class="add_review">
+                                @if (User.Identity.IsAuthenticated)
+                                {
+                                    <a href="@Url.Action("Create", "Review", new { productId = Model.Id })" class="write_review_btn">Write a Review</a>
+                                }
+                                else
+                                {
+                                    <a href="@Url.Action("Login", "Profile", new { returnUrl = Url.Action("Create", "Review", new { productId = Model.Id }) })" class="write_review_btn">Sign in to Write a Review</a>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div class="reviews_list">
+                            @if (Model.Reviews != null && Model.Reviews.Any())
+                            {
+                                foreach (var review in Model.Reviews.OrderByDescending(r => r.CreatedAt))
+                                {
+                                    <div class="review_item">
+                                        <div class="review_header">
+                                            <div class="reviewer_info">
+                                                <span class="reviewer_name">@(review.Customer?.FirstName ?? "Anonim")</span>
+                                                <span class="review_date">@review.CreatedAt.ToString("dd.MM.yyyy")</span>
+                                            </div>
+                                            <div class="review_rating">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= review.Rating)
+                                                    {
+                                                        <i class="fas fa-star"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="far fa-star"></i>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="review_content">
+                                            @if (!string.IsNullOrEmpty(review.Title))
+                                            {
+                                                <h4 class="review_title">@review.Title</h4>
+                                            }
+                                            <p class="review_text">@review.Comment</p>
+                                        </div>
+                                        
+                                        @if (!string.IsNullOrEmpty(review.AdminResponse))
+                                        {
+                                            <div class="admin_response">
+                                                <div class="response_header">
+                                                    <span class="response_author">Răspuns Beauty Moldova</span>
+                                                    <span class="response_date">@review.AdminResponseDate?.ToString("dd.MM.yyyy")</span>
+                                                </div>
+                                                <p class="response_text">@review.AdminResponse</p>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="no_reviews">
+                                    <p>Nu există recenzii pentru acest produs. Fii primul care scrie o recenzie!</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.product_details_section {
+    padding: 60px 0;
+}
+
+/* Product Images */
+.product_images {
+    position: relative;
+}
+
+.main_image {
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 1px solid #eee;
+}
+
+.main_image img {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+}
+
+.thumbnail_images {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.thumbnail {
+    width: 80px;
+    height: 80px;
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid #eee;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.thumbnail.active {
+    border-color: #4285f4;
+    opacity: 1;
+}
+
+.thumbnail:hover {
+    opacity: 1;
+}
+
+.thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Product Info */
+.product_info {
+    padding: 0 20px;
+}
+
+.breadcrumbs {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #777;
+}
+
+.breadcrumbs a {
+    color: #777;
+    text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+    color: #4285f4;
+}
+
+.product_title {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.product_meta {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.manufacturer, .sku {
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.label {
+    font-weight: 600;
+    margin-right: 5px;
+    color: #555;
+}
+
+.product_rating {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.product_rating .fas.fa-star {
+    color: #ffc107;
+}
+
+.product_rating .far.fa-star {
+    color: #ccc;
+}
+
+.review_count {
+    margin-left: 10px;
+    color: #777;
+    text-decoration: none;
+}
+
+.product_price {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.current_price {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.old_price {
+    font-size: 18px;
+    color: #999;
+    text-decoration: line-through;
+    margin-right: 15px;
+}
+
+.discount_badge {
+    background-color: #f44336;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-left: 15px;
+}
+
+.product_description {
+    margin-bottom: 20px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.product_stock {
+    margin-bottom: 25px;
+    font-weight: 500;
+}
+
+.in_stock {
+    color: #2e7d32;
+}
+
+.limited_stock {
+    color: #ff8f00;
+}
+
+.out_of_stock {
+    color: #c62828;
+}
+
+.add_to_cart_section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.quantity_selector {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-right: 15px;
+}
+
+.qty_btn {
+    width: 40px;
+    height: 40px;
+    background: #f5f5f5;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.qty_btn:hover {
+    background: #e0e0e0;
+}
+
+#quantity {
+    width: 60px;
+    height: 40px;
+    border: none;
+    text-align: center;
+    font-size: 16px;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.add_to_cart_btn {
+    height: 42px;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 0 20px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 10px;
+}
+
+.add_to_cart_btn:hover {
+    background-color: #3367d6;
+}
+
+.add_to_cart_btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.wishlist_btn {
+    width: 42px;
+    height: 42px;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.wishlist_btn:hover {
+    background-color: #e0e0e0;
+    color: #f44336;
+}
+
+.additional_info {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.info_item {
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+/* Tabs */
+.product_tabs {
+    margin-top: 60px;
+}
+
+.nav-tabs {
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 30px;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #555;
+    font-weight: 600;
+    padding: 10px 20px;
+    margin-right: 10px;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link.active, 
+.nav-tabs .nav-link:hover {
+    color: #4285f4;
+    border-bottom-color: #4285f4;
+    background-color: transparent;
+}
+
+.tab_content {
+    padding: 20px 0;
+    line-height: 1.6;
+}
+
+/* Reviews */
+.reviews_summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.average_rating {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.rating_value {
+    font-size: 48px;
+    font-weight: 700;
+    color: #333;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+.rating_stars {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+.rating_count {
+    color: #777;
+}
+
+.write_review_btn {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.write_review_btn:hover {
+    background-color: #3367d6;
+}
+
+.reviews_list {
+    margin-top: 20px;
+}
+
+.review_item {
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+}
+
+.review_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.reviewer_name {
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+.review_date {
+    color: #777;
+    font-size: 14px;
+}
+
+.review_rating {
+    color: #ffc107;
+}
+
+.review_title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.review_text {
+    margin-bottom: 0;
+    line-height: 1.6;
+}
+
+.admin_response {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #ddd;
+}
+
+.response_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.response_author {
+    font-weight: 600;
+    color: #4285f4;
+}
+
+.response_date {
+    color: #777;
+    font-size: 14px;
+}
+
+.response_text {
+    font-style: italic;
+    background-color: #f0f7ff;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 0;
+}
+
+.no_reviews {
+    text-align: center;
+    padding: 40px 0;
+    color: #777;
+}
+
+@@media (max-width: 768px) {
+    .product_details_section {
+        padding: 30px 0;
+    }
+    
+    .product_info {
+        padding: 0;
+        margin-top: 30px;
+    }
+    
+    .product_title {
+        font-size: 24px;
+    }
+    
+    .main_image img {
+        height: 300px;
+    }
+    
+    .reviews_summary {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .average_rating {
+        margin-bottom: 20px;
+    }
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    // Thumbnail image click
+    $('.thumbnail').click(function() {
+        $('.thumbnail').removeClass('active');
+        $(this).addClass('active');
+        
+        var imgPath = $(this).data('img');
+        $('#mainProductImage').attr('src', '/Content/images/' + imgPath);
+    });
+    
+    // Quantity increase/decrease
+    $('#increaseQty').click(function() {
+        var currentVal = parseInt($('#quantity').val());
+        var maxStock = @Model.StockQuantity;
+        
+        if (currentVal < maxStock) {
+            $('#quantity').val(currentVal + 1);
+        }
+    });
+    
+    $('#decreaseQty').click(function() {
+        var currentVal = parseInt($('#quantity').val());
+        
+        if (currentVal > 1) {
+            $('#quantity').val(currentVal - 1);
+        }
+    });
+    
+    // Add to cart
+    $('#addToCartBtn').click(function() {
+        var productId = @Model.Id;
+        var quantity = parseInt($('#quantity').val());
+        
+        // Call add to cart function
+        addToCart(productId, '@Model.Name', @(Model.DiscountPrice ?? Model.Price), '@(Model.MainImage ?? "default-product.jpg")', quantity);
+    });
+    
+    // Add to wishlist
+    $('#addToWishlistBtn').click(function() {
+        var productId = @Model.Id;
+        addToWishlist(productId);
+    });
+    
+    // Write review
+    $('#writeReviewBtn').click(function() {
+        @if (!User.Identity.IsAuthenticated) {
+            <text>
+            alert('Trebuie să fiți autentificat pentru a scrie o recenzie. Vă rugăm să vă autentificați.');
+            window.location.href = '@Url.Action("Enter", "Profile", new { returnUrl = Request.Url.PathAndQuery })';
+            </text>
+        } else {
+            <text>
+            // Show review form logic would go here
+            alert('Funcționalitatea de scriere a recenziilor nu este implementată în această versiune demo.');
+            </text>
+        }
+    });
+});
+
+function addToCart(productId, name, price, image, quantity = 1) {
+    // Проверка авторизации перед добавлением в корзину
+    @if (!User.Identity.IsAuthenticated) {
+        <text>
+        // Перенаправление на страницу входа
+        window.location.href = '@Url.Action("Login", "Profile", new { returnUrl = Request.Url.PathAndQuery })';
+        return;
+        </text>
+    }
+    
+    // Get current cart from localStorage or create empty array
+    let cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+    
+    // Check if product already exists in cart
+    const existingItem = cartItems.find(item => item.id === productId);
+    
+    if (existingItem) {
+        existingItem.qty += quantity;
+    } else {
+        cartItems.push({
+            id: productId,
+            name: name,
+            price: price,
+            image: image,
+            qty: quantity
+        });
+    }
+    
+    // Save updated cart
+    localStorage.setItem('cartItems', JSON.stringify(cartItems));
+    
+    // Show success message
+    alert('Produsul a fost adăugat în coș!');
+    
+    // Refresh cart UI if needed
+    if (typeof loadCartItems === 'function') {
+        loadCartItems();
+    }
+}
+
+function addToWishlist(productId) {
+    // Проверка авторизации перед добавлением в избранное
+    @if (!User.Identity.IsAuthenticated) {
+        <text>
+        // Перенаправление на страницу входа
+        window.location.href = '@Url.Action("Login", "Profile", new { returnUrl = Request.Url.PathAndQuery })';
+        return;
+        </text>
+    }
+    
+    // AJAX запрос для добавления в избранное
+    $.ajax({
+        url: '@Url.Action("AddToWishlist", "Customer")',
+        type: 'POST',
+        data: { productId: productId },
+        success: function (response) {
+            if (response.success) {
+                alert(response.message || 'Produsul a fost adăugat la favorite!');
+            } else {
+                alert(response.message || 'A apărut o eroare. Vă rugăm să încercați din nou.');
+            }
+        },
+        error: function () {
+            alert('A apărut o eroare. Vă rugăm să încercați din nou.');
+        }
+    });
+}
+</script> 
