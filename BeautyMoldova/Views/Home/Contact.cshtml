@@ -1,0 +1,172 @@
+﻿@{
+    ViewBag.Title = "Contact";
+}
+
+<!-- contact section start -->
+      <div class="contact_section layout_padding">
+         <div class="container">
+            <div class="row">
+               <div class="col-md-6">
+                  <h1 class="contact_taital">Contact Us</h1>
+                  <p class="contact_text">We are always happy to hear from our customers. If you have questions about our products, suggestions, or feedback, please contact us using one of the methods below.</p>
+                  
+                  <div class="contact_info">
+                     <div class="contact_item">
+                        <div class="contact_icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="contact_details">
+                           <h5>Our Address</h5>
+                           <p>Stefan cel Mare Boulevard 134<br>Chisinau, MD-2012<br>Republic of Moldova</p>
+                        </div>
+                     </div>
+                     
+                     <div class="contact_item">
+                        <div class="contact_icon"><i class="fas fa-phone-alt"></i></div>
+                        <div class="contact_details">
+                           <h5>Phone</h5>
+                           <p>+373 22 123456<br>+373 69 123456</p>
+                        </div>
+                     </div>
+                     
+                     <div class="contact_item">
+                        <div class="contact_icon"><i class="fas fa-envelope"></i></div>
+                        <div class="contact_details">
+                           <h5>Email</h5>
+                           <p>info@beautymoldova.md<br>support@beautymoldova.md</p>
+                        </div>
+                     </div>
+                     
+                     <div class="contact_item">
+                        <div class="contact_icon"><i class="fas fa-clock"></i></div>
+                        <div class="contact_details">
+                           <h5>Working Hours</h5>
+                           <p>Monday - Friday: 9:00 AM - 6:00 PM<br>Saturday: 10:00 AM - 4:00 PM<br>Sunday: Closed</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <div class="col-md-6">
+                  <div class="contact_form_container">
+                     <h3 class="form_title">Send a Message</h3>
+                     <form id="contact_form" class="contact_form">
+                        <div class="form-group">
+                           <input type="text" class="form-control" id="name" placeholder="Your name" required>
+                        </div>
+                        <div class="form-group">
+                           <input type="email" class="form-control" id="email" placeholder="Your email" required>
+                        </div>
+                        <div class="form-group">
+                           <input type="text" class="form-control" id="subject" placeholder="Subject">
+                        </div>
+                        <div class="form-group">
+                           <textarea class="form-control" id="message" rows="5" placeholder="Your message" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary submit_btn">Send Message</button>
+                     </form>
+                  </div>
+               </div>
+            </div>
+         </div>
+         <div class="map_main">
+            <div class="map-responsive">
+               <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2720.191055180592!2d28.83692351564176!3d47.01946067914962!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40c97c3afea26fa7%3A0xb914e03b5e56c390!2sStefan%20cel%20Mare%20si%20Sfant%20Blvd%20134%2C%20Chi%C8%99in%C4%83u%2C%20Moldova!5e0!3m2!1sen!2sus!4v1600000000000!5m2!1sen!2sus" width="600" height="450" frameborder="0" style="border:0; width: 100%;" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
+            </div>
+         </div>
+      </div>
+      <!-- contact section end -->
+
+<style>
+.contact_info {
+    margin-top: 40px;
+}
+
+.contact_item {
+    display: flex;
+    margin-bottom: 30px;
+}
+
+.contact_icon {
+    width: 50px;
+    height: 50px;
+    background-color: #0d6efd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    color: white;
+    font-size: 20px;
+}
+
+.contact_details h5 {
+    font-size: 18px;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.contact_details p {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
+.contact_form_container {
+    background-color: #f8f9fa;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.form_title {
+    font-size: 24px;
+    margin-bottom: 25px;
+    text-align: center;
+    color: #333;
+}
+
+.contact_form .form-group {
+    margin-bottom: 20px;
+}
+
+.contact_form .form-control {
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+}
+
+.contact_form .form-control:focus {
+    box-shadow: none;
+    border-color: #0d6efd;
+}
+
+.submit_btn {
+    background-color: #0d6efd;
+    border: none;
+    padding: 12px 30px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.submit_btn:hover {
+    background-color: #0b5ed7;
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    $('#contact_form').submit(function(e) {
+        e.preventDefault();
+        
+        // Here will be the code to send the form
+        alert('Thank you for your message! We will contact you soon.');
+        
+        // Clear the form
+        $('#name').val('');
+        $('#email').val('');
+        $('#subject').val('');
+        $('#message').val('');
+    });
+});
+</script>
