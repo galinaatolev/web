@@ -1,0 +1,137 @@
+@{
+    ViewBag.Title = "Login";
+    Layout = "~/Views/Profile/_AuthLayout.cshtml";
+}
+
+<div class="auth-form">
+    @using (Html.BeginForm("Enter", "Profile", FormMethod.Post, new { @class = "form" }))
+    {
+        @Html.ValidationSummary(true, "", new { @class = "validation-summary-errors" })
+        
+        <div class="form-group">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                </div>
+                <input type="text" name="login" class="form-control" placeholder="Username" required>
+            </div>
+            @Html.ValidationMessage("login", "", new { @class = "field-validation-error" })
+        </div>
+        
+        <div class="form-group">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                </div>
+                <input type="password" name="pin" class="form-control" placeholder="Password" required>
+            </div>
+            @Html.ValidationMessage("pin", "", new { @class = "field-validation-error" })
+        </div>
+        
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" id="rememberMe" name="rememberMe">
+            <label class="form-check-label" for="rememberMe">Remember me</label>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt mr-2"></i> Login
+            </button>
+        </div>
+    }
+    
+    <div class="auth-links">
+        <p>Don't have an account? <a href="@Url.Action("CreateAccount", "Profile")">Register</a></p>
+        <p><a href="#">Forgot password?</a></p>
+    </div>
+</div>
+
+<div class="auth-benefits mt-4">
+    <h5 class="text-center mb-3">Benefits of having an account</h5>
+    <div class="row">
+        <div class="col-md-4 text-center">
+            <div class="benefit-icon mb-2">
+                <i class="fas fa-shipping-fast"></i>
+            </div>
+            <div class="benefit-text">
+                Order tracking
+            </div>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="benefit-icon mb-2">
+                <i class="fas fa-history"></i>
+            </div>
+            <div class="benefit-text">
+                Order history
+            </div>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="benefit-icon mb-2">
+                <i class="fas fa-heart"></i>
+            </div>
+            <div class="benefit-text">
+                Wishlist
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+        .input-group-text {
+            background-color: #f8f9fa;
+            border-right: 0;
+            color: #777;
+        }
+        
+        .form-control {
+            border-left: 0;
+        }
+        
+        .form-check-label {
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .auth-benefits {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+        
+        .auth-benefits h5 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .benefit-icon {
+            font-size: 24px;
+            color: #e83e8c;
+        }
+        
+        .benefit-text {
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+
+<script>
+        $(document).ready(function() {
+            // Animation on page load
+            $(".auth-card").hide().fadeIn(800);
+            
+            // Form validation before submission
+            $("form").submit(function(e) {
+                var login = $("input[name='login']").val();
+                var pin = $("input[name='pin']").val();
+                
+                if (!login || !pin) {
+                    e.preventDefault();
+                    alert("Please fill in all fields.");
+                    return false;
+                }
+                
+                return true;
+            });
+        });
+    </script>

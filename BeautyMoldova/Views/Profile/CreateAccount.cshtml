@@ -1,0 +1,200 @@
+@{
+    ViewBag.Title = "Register";
+    Layout = "~/Views/Profile/_AuthLayout.cshtml";
+}
+
+<div class="auth-form">
+    @using (Html.BeginForm("CreateAccount", "Profile", FormMethod.Post, new { @class = "form" }))
+    {
+        @Html.ValidationSummary(true, "", new { @class = "validation-summary-errors" })
+        
+        <div class="form-group">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                </div>
+                <input type="text" name="login" class="form-control" placeholder="Username" required>
+            </div>
+            @Html.ValidationMessage("login", "", new { @class = "field-validation-error" })
+        </div>
+        
+        <div class="form-group">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                </div>
+                <input type="email" name="email" class="form-control" placeholder="Email" required>
+            </div>
+            @Html.ValidationMessage("email", "", new { @class = "field-validation-error" })
+        </div>
+        
+        <div class="form-group">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                </div>
+                <input type="password" name="pin" id="pin" class="form-control" placeholder="Password" required>
+            </div>
+            <small class="form-text text-muted">Password must contain at least 8 characters, including an uppercase letter, a lowercase letter, and a number.</small>
+            @Html.ValidationMessage("pin", "", new { @class = "field-validation-error" })
+        </div>
+        
+        <div class="form-group">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                </div>
+                <input type="password" name="confirmPin" id="confirmPin" class="form-control" placeholder="Confirm password" required>
+            </div>
+            <div id="passwordMatch" class="mt-1 text-success" style="display: none;">
+                <i class="fas fa-check-circle"></i> Passwords match
+            </div>
+            <div id="passwordNoMatch" class="mt-1 text-danger" style="display: none;">
+                <i class="fas fa-times-circle"></i> Passwords don't match
+            </div>
+        </div>
+        
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+            <label class="form-check-label" for="terms">I agree to the <a href="#" data-toggle="modal" data-target="#termsModal">Terms and Conditions</a></label>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary" id="registerBtn">
+                <i class="fas fa-user-plus mr-2"></i> Create Account
+            </button>
+        </div>
+    }
+    
+    <div class="auth-links">
+        <p>Already have an account? <a href="@Url.Action("Enter", "Profile")">Login</a></p>
+    </div>
+</div>
+
+<!-- Modal for Terms and Conditions -->
+<div class="modal fade" id="termsModal" tabindex="-1" role="dialog" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Acceptance of Terms</h6>
+                <p>By using this site, you agree to these terms and conditions in full. If you disagree with these terms and conditions, please do not use this site.</p>
+                
+                <h6>2. Privacy</h6>
+                <p>Our privacy policy, which sets out how we will use your personal data, is part of these terms and conditions.</p>
+                
+                <h6>3. Orders</h6>
+                <p>Placing an order through our website is an offer to purchase the selected products in accordance with these terms and conditions.</p>
+                
+                <h6>4. Data Protection</h6>
+                <p>We are committed to protecting the security of your personal data. We use appropriate security technologies and procedures to help protect your personal data from unauthorized access.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" id="acceptTerms">Accept</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-right: 0;
+        color: #777;
+    }
+
+    .form-control {
+        border-left: 0;
+    }
+
+    .form-check-label {
+        font-size: 14px;
+        color: #555;
+    }
+
+    .form-text {
+        font-size: 12px;
+    }
+
+    .modal-body {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .modal-body h6 {
+        color: #e83e8c;
+        margin-top: 15px;
+    }
+</style>
+
+<script>
+        $(document).ready(function() {
+            // Animation on page load
+            $(".auth-card").hide().fadeIn(800);
+            
+            // Check password match
+            $("#confirmPin").on("keyup", function() {
+                var password = $("#pin").val();
+                var confirmPassword = $(this).val();
+                
+                if (confirmPassword === "") {
+                    $("#passwordMatch").hide();
+                    $("#passwordNoMatch").hide();
+                } else if (password === confirmPassword) {
+                    $("#passwordMatch").show();
+                    $("#passwordNoMatch").hide();
+                } else {
+                    $("#passwordMatch").hide();
+                    $("#passwordNoMatch").show();
+                }
+            });
+            
+            // When clicking the "Accept" button in the modal, automatically check the checkbox
+            $("#acceptTerms").click(function() {
+                $("#terms").prop("checked", true);
+            });
+            
+            // Form validation before submission
+            $("form").submit(function(e) {
+                var login = $("input[name='login']").val();
+                var email = $("input[name='email']").val();
+                var pin = $("#pin").val();
+                var confirmPin = $("#confirmPin").val();
+                var terms = $("#terms").prop("checked");
+                
+                if (!login || !email || !pin || !confirmPin) {
+                    e.preventDefault();
+                    alert("Please fill in all fields.");
+                    return false;
+                }
+                
+                if (pin !== confirmPin) {
+                    e.preventDefault();
+                    alert("Passwords don't match.");
+                    return false;
+                }
+                
+                if (!terms) {
+                    e.preventDefault();
+                    alert("You must accept the Terms and Conditions.");
+                    return false;
+                }
+                
+                // Check password strength
+                var strongRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})");
+                if (!strongRegex.test(pin)) {
+                    e.preventDefault();
+                    alert("Password must contain at least 8 characters, including an uppercase letter, a lowercase letter, and a number.");
+                    return false;
+                }
+                
+                return true;
+            });
+        });
+    </script>
