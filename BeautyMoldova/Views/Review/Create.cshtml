@@ -1,0 +1,98 @@
+@model BeautyMoldova.Domain.Models.Review
+
+@{
+    ViewBag.Title = "Write a Review";
+    var product = ViewBag.Product as BeautyMoldova.Domain.Models.Product;
+}
+
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Write a Review</h1>
+                <a href="@Url.Action("ProductDetails", "Home", new { id = product.Id })" class="text-pink-500 hover:text-pink-700">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Product
+                </a>
+            </div>
+            
+            <div class="flex items-center mb-6">
+                <div class="w-16 h-16 flex-shrink-0">
+                    <img src="~/Content/images/@(string.IsNullOrEmpty(product.MainImage) ? "no-image.jpg" : product.MainImage)" 
+                         alt="@product.Name" class="w-16 h-16 object-cover rounded">
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-lg font-medium text-gray-900">@product.Name</h2>
+                    <p class="text-sm text-gray-600">@product.Manufacturer.Name</p>
+                </div>
+            </div>
+            
+            @using (Html.BeginForm()) 
+            {
+                @Html.AntiForgeryToken()
+                @Html.HiddenFor(model => model.ProductId, new { Value = product.Id })
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Rating <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex items-center" id="ratingStars">
+                            <input type="hidden" name="Rating" id="RatingInput" value="0">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <i class="far fa-star text-2xl cursor-pointer hover:text-yellow-400 mr-1" 
+                                   data-rating="@i" onclick="setRating(@i)"></i>
+                            }
+                        </div>
+                        @Html.ValidationMessageFor(model => model.Rating, "", new { @class = "text-red-500 text-sm mt-1" })
+                    </div>
+                    
+                    <div>
+                        <label for="Title" class="block text-sm font-medium text-gray-700 mb-1">
+                            Review Title <span class="text-red-500">*</span>
+                        </label>
+                        @Html.TextBoxFor(model => model.Title, new { @class = "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500" })
+                        @Html.ValidationMessageFor(model => model.Title, "", new { @class = "text-red-500 text-sm mt-1" })
+                    </div>
+                    
+                    <div>
+                        <label for="Comment" class="block text-sm font-medium text-gray-700 mb-1">
+                            Review Comment <span class="text-red-500">*</span>
+                        </label>
+                        @Html.TextAreaFor(model => model.Comment, new { @class = "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500", rows = 5 })
+                        @Html.ValidationMessageFor(model => model.Comment, "", new { @class = "text-red-500 text-sm mt-1" })
+                    </div>
+                    
+                    <div class="pt-4">
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                            Submit Review
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        function setRating(rating) {
+            // Update hidden field value
+            document.getElementById('RatingInput').value = rating;
+            
+            // Update stars
+            const stars = document.querySelectorAll('#ratingStars i');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.remove('far');
+                    star.classList.add('fas');
+                    star.classList.add('text-yellow-400');
+                } else {
+                    star.classList.remove('fas');
+                    star.classList.add('far');
+                    star.classList.remove('text-yellow-400');
+                }
+            });
+        }
+    </script>
+} 
