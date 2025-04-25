@@ -1,0 +1,277 @@
+@model IEnumerable<BeautyMoldova.Domain.Models.Product>
+@{
+    ViewBag.Title = "Product Catalog";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <div class="row">
+        <!-- Filters -->
+        <div class="col-lg-3">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    @using (Html.BeginForm("Index", "Catalog", FormMethod.Get, new { id = "filterForm" }))
+                    {
+                        <input type="hidden" name="page" value="1" />
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Categories</label>
+                            <select name="categoryId" class="form-select" onchange="document.getElementById('filterForm').submit();">
+                                <option value="">All categories</option>
+                                @foreach (var category in ViewBag.Categories)
+                                {
+                                    <option value="@category.Id" @(ViewBag.CategoryId == category.Id ? "selected" : "")>@category.Name</option>
+                                    if (category.ChildCategories != null)
+                                    {
+                                        var childCategories = ((IEnumerable<dynamic>)category.ChildCategories)
+                                            .Where(c => (bool)c.IsActive)
+                                            .OrderBy(c => (int)c.DisplayOrder);
+                                            
+                                        foreach (var child in childCategories)
+                                        {
+                                            <option value="@child.Id" @(ViewBag.CategoryId == child.Id ? "selected" : "")>&nbsp;&nbsp;&nbsp;@child.Name</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Manufacturers</label>
+                            <select name="manufacturerId" class="form-select" onchange="document.getElementById('filterForm').submit();">
+                                <option value="">All manufacturers</option>
+                                @foreach (var manufacturer in ViewBag.Manufacturers)
+                                {
+                                    <option value="@manufacturer.Id" @(ViewBag.ManufacturerId == manufacturer.Id ? "selected" : "")>@manufacturer.Name</option>
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Skin Type</label>
+                            <select name="skinType" class="form-select" onchange="document.getElementById('filterForm').submit();">
+                                <option value="">All types</option>
+                                @foreach (var skinType in ViewBag.SkinTypes)
+                                {
+                                    <option value="@skinType" @(ViewBag.SkinType == skinType ? "selected" : "")>@skinType</option>
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Price</label>
+                            <div class="row g-2">
+                                <div class="col">
+                                    <input type="number" name="minPrice" class="form-control" placeholder="From" value="@ViewBag.MinPrice" />
+                                </div>
+                                <div class="col">
+                                    <input type="number" name="maxPrice" class="form-control" placeholder="To" value="@ViewBag.MaxPrice" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">Apply</button>
+                        <a href="@Url.Action("Index", "Catalog")" class="btn btn-outline-secondary w-100 mt-2">Reset</a>
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product list -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        @if (ViewBag.CategoryName != null)
+                        {
+                            @ViewBag.CategoryName
+                        }
+                        else if (ViewBag.ManufacturerName != null)
+                        {
+                            @ViewBag.ManufacturerName
+                        }
+                        else
+                        {
+                            @ViewBag.Title
+                        }
+                    </h1>
+                    <p class="text-muted">Products found: @ViewBag.TotalItems</p>
+                </div>
+                
+                <div class="ml-auto">
+                    <select id="sortOrder" name="sortOrder" class="form-select" onchange="updateSortOrder()">
+                        <option value="" @(ViewBag.SortOrder == null ? "selected" : "")>Default</option>
+                        <option value="price_asc" @(ViewBag.SortOrder == "price_asc" ? "selected" : "")>Price: Low to High</option>
+                        <option value="price_desc" @(ViewBag.SortOrder == "price_desc" ? "selected" : "")>Price: High to Low</option>
+                        <option value="name_asc" @(ViewBag.SortOrder == "name_asc" ? "selected" : "")>Name (A-Z)</option>
+                        <option value="name_desc" @(ViewBag.SortOrder == "name_desc" ? "selected" : "")>Name (Z-A)</option>
+                        <option value="new" @(ViewBag.SortOrder == "new" ? "selected" : "")>Newest First</option>
+                        <option value="popular" @(ViewBag.SortOrder == "popular" ? "selected" : "")>Popularity</option>
+                    </select>
+                </div>
+            </div>
+            
+            @if (!Model.Any())
+            {
+                <div class="alert alert-info">
+                    <p class="mb-0">No products found for your request. Try changing the filter parameters.</p>
+                </div>
+            }
+            else
+            {
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    @foreach (var product in Model)
+                    {
+                        <div class="col">
+                            <div class="card h-100 shadow-sm product-card">
+                                <div class="position-relative">
+                                    <img src="@Url.Content(string.IsNullOrEmpty(product.MainImage) ? "~/Content/images/no-image.jpg" : product.MainImage)" 
+                                         class="card-img-top product-img" alt="@product.Name">
+                                    
+                                    @if (product.DiscountPrice.HasValue)
+                                    {
+                                        var discountPercent = (int)Math.Round((1 - product.DiscountPrice.Value / product.Price) * 100);
+                                        <span class="badge bg-danger position-absolute top-0 end-0 m-2">-@discountPercent%</span>
+                                    }
+                                    
+                                    @if (product.IsFeatured)
+                                    {
+                                        <span class="badge bg-success position-absolute top-0 start-0 m-2">Best Seller</span>
+                                    }
+                                </div>
+                                
+                                <div class="card-body d-flex flex-column">
+                                    <p class="card-text text-muted small mb-1">@product.Manufacturer.Name</p>
+                                    <h5 class="card-title mb-1">
+                                        <a href="@Url.Action("ProductDetails", "Catalog", new { id = product.Id })" 
+                                           class="text-decoration-none text-dark product-link">@product.Name</a>
+                                    </h5>
+                                    <p class="card-text text-muted small mb-2">@product.Category.Name</p>
+                                    
+                                    <div class="mt-auto">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                @if (product.DiscountPrice.HasValue)
+                                                {
+                                                    <span class="fw-bold fs-5 text-danger me-2">@product.DiscountPrice.Value.ToString("N0") MDL</span>
+                                                    <span class="text-muted text-decoration-line-through">@product.Price.ToString("N0") MDL</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="fw-bold fs-5">@product.Price.ToString("N0") MDL</span>
+                                                }
+                                            </div>
+                                            
+                                            <a href="@Url.Action("ProductDetails", "Catalog", new { id = product.Id })" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2 mt-3">
+                                            <button class="btn btn-primary add-to-cart" data-product-id="@product.Id">
+                                                <i class="fas fa-shopping-cart me-1"></i> Add to Cart
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                
+                <!-- Pagination -->
+                if (ViewBag.TotalPages > 1)
+                {
+                    <nav class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            @if (ViewBag.CurrentPage > 1)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", "Catalog", new { 
+                                        categoryId = ViewBag.CategoryId, 
+                                        manufacturerId = ViewBag.ManufacturerId,
+                                        sortOrder = ViewBag.SortOrder,
+                                        minPrice = ViewBag.MinPrice,
+                                        maxPrice = ViewBag.MaxPrice,
+                                        skinType = ViewBag.SkinType,
+                                        page = ViewBag.CurrentPage - 1
+                                    })">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            }
+                            
+                            @{
+                                int startPage = Math.Max(1, ViewBag.CurrentPage - 2);
+                                int endPage = Math.Min(ViewBag.TotalPages, startPage + 4);
+                                
+                                if (endPage - startPage < 4)
+                                {
+                                    startPage = Math.Max(1, endPage - 4);
+                                }
+                            }
+                            
+                            @for (int i = startPage; i <= endPage; i++)
+                            {
+                                <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("Index", "Catalog", new { 
+                                        categoryId = ViewBag.CategoryId, 
+                                        manufacturerId = ViewBag.ManufacturerId,
+                                        sortOrder = ViewBag.SortOrder,
+                                        minPrice = ViewBag.MinPrice,
+                                        maxPrice = ViewBag.MaxPrice,
+                                        skinType = ViewBag.SkinType,
+                                        page = i
+                                    })">@i</a>
+                                </li>
+                            }
+                            
+                            @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", "Catalog", new { 
+                                        categoryId = ViewBag.CategoryId, 
+                                        manufacturerId = ViewBag.ManufacturerId,
+                                        sortOrder = ViewBag.SortOrder,
+                                        minPrice = ViewBag.MinPrice,
+                                        maxPrice = ViewBag.MaxPrice,
+                                        skinType = ViewBag.SkinType,
+                                        page = ViewBag.CurrentPage + 1
+                                    })">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        function updateSortOrder() {
+            var sortValue = document.getElementById('sortOrder').value;
+            var url = new URL(window.location.href);
+            url.searchParams.set('sortOrder', sortValue);
+            url.searchParams.set('page', '1');
+            window.location.href = url.toString();
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.add-to-cart').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var productId = this.getAttribute('data-product-id');
+                    // Add to cart function via AJAX will be here
+                    alert('Product added to cart!');
+                });
+            });
+        });
+    </script>
+} 

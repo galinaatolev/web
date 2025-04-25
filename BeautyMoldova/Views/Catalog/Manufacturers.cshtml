@@ -1,0 +1,122 @@
+@model IEnumerable<BeautyMoldova.Domain.Models.Manufacturer>
+@{
+    ViewBag.Title = "Производители";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <h1 class="h2 mb-4">Производители косметики</h1>
+    
+    <!-- Секция люксовых брендов -->
+    @{
+        var luxuryBrands = Model.Where(m => m.IsLuxury).ToList();
+        var regularBrands = Model.Where(m => !m.IsLuxury).ToList();
+    }
+    
+    @if (luxuryBrands.Any())
+    {
+        <div class="mb-5">
+            <h2 class="h3 mb-4 border-bottom pb-2">Люксовые бренды</h2>
+            
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+                @foreach (var brand in luxuryBrands)
+                {
+                    <div class="col">
+                        <div class="card h-100 shadow-sm brand-card luxury-brand">
+                            <div class="brand-logo-container">
+                                <img src="@(string.IsNullOrEmpty(brand.Logo) ? "/Content/images/brand-placeholder.jpg" : brand.Logo)" 
+                                     class="card-img-top brand-logo" alt="@brand.Name">
+                            </div>
+                            
+                            <div class="card-body text-center">
+                                <h3 class="card-title h5">@brand.Name</h3>
+                                <p class="card-text small text-muted">@brand.Country</p>
+                                <p class="card-text small">@(brand.Description?.Length > 80 ? brand.Description.Substring(0, 80) + "..." : brand.Description)</p>
+                                
+                                <div class="mt-auto">
+                                    <a href="@Url.Action("Manufacturer", "Catalog", new { id = brand.Id })" 
+                                       class="btn btn-outline-primary btn-sm stretched-link">
+                                        Смотреть товары
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    
+    <!-- Остальные бренды -->
+    @if (regularBrands.Any())
+    {
+        <div>
+            <h2 class="h3 mb-4 border-bottom pb-2">Популярные бренды</h2>
+            
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+                @foreach (var brand in regularBrands)
+                {
+                    <div class="col">
+                        <div class="card h-100 shadow-sm brand-card">
+                            <div class="brand-logo-container">
+                                <img src="@(string.IsNullOrEmpty(brand.Logo) ? "/Content/images/brand-placeholder.jpg" : brand.Logo)" 
+                                     class="card-img-top brand-logo" alt="@brand.Name">
+                            </div>
+                            
+                            <div class="card-body text-center">
+                                <h3 class="card-title h5">@brand.Name</h3>
+                                <p class="card-text small text-muted">@brand.Country</p>
+                                <p class="card-text small">@(brand.Description?.Length > 80 ? brand.Description.Substring(0, 80) + "..." : brand.Description)</p>
+                                
+                                <div class="mt-auto">
+                                    <a href="@Url.Action("Manufacturer", "Catalog", new { id = brand.Id })" 
+                                       class="btn btn-outline-primary btn-sm stretched-link">
+                                        Смотреть товары
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .brand-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .brand-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    
+    .brand-logo-container {
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background-color: #f8f9fa;
+    }
+    
+    .brand-logo {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    
+    .luxury-brand {
+        border-color: #d4af37;
+    }
+    
+    .luxury-brand .brand-logo-container {
+        background-color: #f8f7f2;
+    }
+    
+    .luxury-brand .card-title {
+        color: #d4af37;
+    }
+</style> 

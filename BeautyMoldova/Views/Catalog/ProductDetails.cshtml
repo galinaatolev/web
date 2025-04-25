@@ -1,0 +1,604 @@
+@model BeautyMoldova.Domain.Models.Product
+@{
+    ViewBag.Title = Model.Name;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")">Главная</a></li>
+            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Catalog")">Каталог</a></li>
+            <li class="breadcrumb-item"><a href="@Url.Action("Category", "Catalog", new { id = Model.CategoryId })">@Model.Category.Name</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+        </ol>
+    </nav>
+    
+    <div class="card border-0 shadow-sm mb-5">
+        <div class="card-body p-4">
+            <div class="row">
+                <!-- Галерея изображений -->
+                <div class="col-md-6 mb-4 mb-md-0">
+                    <div class="product-gallery">
+                        <div class="main-image-container mb-3">
+                            <img id="mainImage" src="@(string.IsNullOrEmpty(Model.MainImage) ? "/Content/images/no-image.jpg" : Model.MainImage)" 
+                                 class="img-fluid rounded" alt="@Model.Name">
+                                 
+                            @if (Model.DiscountPrice.HasValue)
+                            {
+                                var discountPercent = (int)Math.Round((1 - Model.DiscountPrice.Value / Model.Price) * 100);
+                                <span class="badge bg-danger position-absolute top-0 end-0 m-3">-@discountPercent%</span>
+                            }
+                            
+                            @if (Model.IsFeatured)
+                            {
+                                <span class="badge bg-success position-absolute top-0 start-0 m-3">Хит продаж</span>
+                            }
+                        </div>
+                        
+                        <div class="thumbnail-images row g-2">
+                            @if (string.IsNullOrEmpty(Model.MainImage) == false)
+                            {
+                                <div class="col-3">
+                                    <img src="@Model.MainImage" class="img-thumbnail thumbnail-img active" 
+                                         alt="@Model.Name" onclick="changeMainImage(this.src)">
+                                </div>
+                            }
+                            
+                            @foreach (var image in Model.AdditionalImages)
+                            {
+                                <div class="col-3">
+                                    <img src="@image.ImageUrl" class="img-thumbnail thumbnail-img" 
+                                         alt="@Model.Name" onclick="changeMainImage(this.src)">
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Информация о продукте -->
+                <div class="col-md-6">
+                    <h1 class="h2 mb-2">@Model.Name</h1>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <a href="@Url.Action("Manufacturer", "Catalog", new { id = Model.ManufacturerId })" 
+                           class="text-decoration-none text-primary">@Model.Manufacturer.Name</a>
+                        <span class="mx-2">|</span>
+                        <span class="text-muted">SKU: @Model.SKU</span>
+                    </div>
+                    
+                    <!-- Рейтинг -->
+                    <div class="mb-3">
+                        @{ 
+                            var avgRating = Model.Reviews != null && Model.Reviews.Any() 
+                                ? Math.Round(Model.Reviews.Average(r => r.Rating), 1) 
+                                : 0;
+                            var reviewCount = Model.Reviews?.Count ?? 0;
+                        }
+                        
+                        <div class="d-flex align-items-center">
+                            <div class="ratings">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    if (i <= Math.Floor(avgRating))
+                                    {
+                                        <i class="fas fa-star text-warning"></i>
+                                    }
+                                    else if (i - avgRating > 0 && i - avgRating < 1)
+                                    {
+                                        <i class="fas fa-star-half-alt text-warning"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="far fa-star text-warning"></i>
+                                    }
+                                }
+                            </div>
+                            <span class="ms-2">
+                                <strong>@avgRating.ToString("0.0")</strong>
+                                <a href="#reviews" class="text-muted ms-1">(@reviewCount @(reviewCount == 1 ? "отзыв" : reviewCount > 1 && reviewCount < 5 ? "отзыва" : "отзывов"))</a>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Цена -->
+                    <div class="mb-4">
+                        @if (Model.DiscountPrice.HasValue)
+                        {
+                            <div class="d-flex align-items-center">
+                                <span class="h3 text-danger mb-0 me-3">@Model.DiscountPrice.Value.ToString("N0") MDL</span>
+                                <span class="h5 text-muted mb-0 text-decoration-line-through">@Model.Price.ToString("N0") MDL</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="h3 mb-0">@Model.Price.ToString("N0") MDL</span>
+                        }
+                    </div>
+                    
+                    <!-- Наличие -->
+                    <div class="mb-4">
+                        @if (Model.StockQuantity > 0)
+                        {
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-success me-2">В наличии</span>
+                                <span class="text-muted">@Model.StockQuantity шт.</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Нет в наличии</span>
+                        }
+                    </div>
+                    
+                    <!-- Добавление в корзину -->
+                    <div class="d-flex mb-4">
+                        <div class="input-group me-3" style="width: 130px;">
+                            <button class="btn btn-outline-secondary" type="button" id="decreaseQty">-</button>
+                            <input type="number" class="form-control text-center" id="productQty" value="1" min="1" max="@Model.StockQuantity">
+                            <button class="btn btn-outline-secondary" type="button" id="increaseQty">+</button>
+                        </div>
+                        
+                        <button class="btn btn-primary flex-grow-1 add-to-cart" data-product-id="@Model.Id">
+                            <i class="fas fa-shopping-cart me-2"></i> Добавить в корзину
+                        </button>
+                    </div>
+                    
+                    <!-- Действия -->
+                    <div class="d-flex mb-4">
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            if (ViewBag.IsInWishlist == true)
+                            {
+                                <button class="btn btn-outline-danger me-2 remove-from-wishlist" data-product-id="@Model.Id">
+                                    <i class="fas fa-heart me-1"></i> Удалить из избранного
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-outline-primary me-2 add-to-wishlist" data-product-id="@Model.Id">
+                                    <i class="far fa-heart me-1"></i> В избранное
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Enter", "Profile")" class="btn btn-outline-primary me-2">
+                                <i class="far fa-heart me-1"></i> В избранное
+                            </a>
+                        }
+                        
+                        <button class="btn btn-outline-primary">
+                            <i class="fas fa-share-alt me-1"></i> Поделиться
+                        </button>
+                    </div>
+                    
+                    <!-- Теги -->
+                    @if (Model.ProductTags != null && Model.ProductTags.Any())
+                    {
+                        <div class="mb-4">
+                            <div class="d-flex flex-wrap gap-1">
+                                @foreach (var tag in Model.ProductTags.Select(pt => pt.Tag))
+                                {
+                                    <a href="@Url.Action("Index", "Catalog")?tag=@tag.Id" class="badge bg-light text-dark text-decoration-none">
+                                        @tag.Name
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                    
+                    <!-- Краткое описание -->
+                    <div class="mb-3">
+                        <p>@Model.Description</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Табы с информацией -->
+    <div class="card border-0 shadow-sm mb-5">
+        <div class="card-body p-4">
+            <ul class="nav nav-tabs mb-4" id="productTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" 
+                            type="button" role="tab" aria-controls="details" aria-selected="true">
+                        Описание
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="ingredients-tab" data-bs-toggle="tab" data-bs-target="#ingredients" 
+                            type="button" role="tab" aria-controls="ingredients" aria-selected="false">
+                        Состав
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="usage-tab" data-bs-toggle="tab" data-bs-target="#usage" 
+                            type="button" role="tab" aria-controls="usage" aria-selected="false">
+                        Способ применения
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" 
+                            type="button" role="tab" aria-controls="reviews" aria-selected="false">
+                        Отзывы (@(Model.Reviews?.Count ?? 0))
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="productTabsContent">
+                <!-- Описание -->
+                <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4>Подробное описание</h4>
+                            <p>@Html.Raw(Model.Description)</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h4>Характеристики</h4>
+                            <table class="table">
+                                <tbody>
+                                    @if (Model.Size.HasValue)
+                                    {
+                                        <tr>
+                                            <th>Объем</th>
+                                            <td>@Model.Size @Model.SizeUnit</td>
+                                        </tr>
+                                    }
+                                    @if (Model.Weight.HasValue)
+                                    {
+                                        <tr>
+                                            <th>Вес</th>
+                                            <td>@Model.Weight г</td>
+                                        </tr>
+                                    }
+                                    @if (!string.IsNullOrEmpty(Model.SkinType))
+                                    {
+                                        <tr>
+                                            <th>Тип кожи</th>
+                                            <td>@Model.SkinType</td>
+                                        </tr>
+                                    }
+                                    <tr>
+                                        <th>Бренд</th>
+                                        <td>@Model.Manufacturer.Name</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Страна</th>
+                                        <td>@Model.Manufacturer.Country</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Состав -->
+                <div class="tab-pane fade" id="ingredients" role="tabpanel" aria-labelledby="ingredients-tab">
+                    <h4>Состав</h4>
+                    <p>@Html.Raw(Model.Ingredients)</p>
+                </div>
+                
+                <!-- Способ применения -->
+                <div class="tab-pane fade" id="usage" role="tabpanel" aria-labelledby="usage-tab">
+                    <h4>Способ применения</h4>
+                    <p>@Html.Raw(Model.HowToUse)</p>
+                </div>
+                
+                <!-- Отзывы -->
+                <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+                    <div class="reviews-section">
+                        <h4 class="mb-4">Отзывы клиентов</h4>
+                        
+                        @if (Model.Reviews == null || !Model.Reviews.Any())
+                        {
+                            <div class="alert alert-info">
+                                У этого товара пока нет отзывов. Будьте первым, кто оставит отзыв!
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="reviews-list mb-4">
+                                @foreach (var review in Model.Reviews.OrderByDescending(r => r.CreatedDate))
+                                {
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <div>
+                                                    <h5 class="mb-0">@review.Customer.FirstName @review.Customer.LastName.Substring(0, 1).</h5>
+                                                    <div class="text-muted small">@review.CreatedDate.ToString("dd.MM.yyyy")</div>
+                                                </div>
+                                                <div class="ratings">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        if (i <= review.Rating)
+                                                        {
+                                                            <i class="fas fa-star text-warning"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="far fa-star text-warning"></i>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                            
+                                            @if (!string.IsNullOrEmpty(review.Title))
+                                            {
+                                                <h6 class="fw-bold">@review.Title</h6>
+                                            }
+                                            
+                                            <p>@review.Comment</p>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <div class="add-review-form">
+                                <h5 class="mb-3">Оставить отзыв</h5>
+                                @using (Html.BeginForm("AddReview", "Catalog", FormMethod.Post))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="ProductId" value="@Model.Id" />
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Ваша оценка</label>
+                                        <div class="rating-stars mb-3">
+                                            <div class="d-flex">
+                                                @for (int i = 5; i >= 1; i--)
+                                                {
+                                                    <div class="me-2">
+                                                        <input type="radio" id="star@(i)" name="Rating" value="@i" class="visually-hidden" />
+                                                        <label for="star@(i)" class="star-rating-label">
+                                                            <i class="far fa-star fs-5"></i>
+                                                        </label>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="reviewTitle" class="form-label">Заголовок</label>
+                                        <input type="text" name="Title" id="reviewTitle" class="form-control" />
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="reviewComment" class="form-label">Комментарий</label>
+                                        <textarea name="Comment" id="reviewComment" class="form-control" rows="4" required></textarea>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary">Отправить отзыв</button>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">
+                                <p class="mb-0">
+                                    Чтобы оставить отзыв, пожалуйста, 
+                                    <a href="@Url.Action("Enter", "Profile")" class="alert-link">войдите</a> в систему.
+                                </p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Похожие товары -->
+    @if (ViewBag.RelatedProducts != null && ((List<BeautyMoldova.Domain.Models.Product>)ViewBag.RelatedProducts).Any())
+    {
+        <div class="similar-products mb-4">
+            <h3 class="mb-4">Похожие товары</h3>
+            
+            <div class="row row-cols-2 row-cols-md-4 g-4">
+                @foreach (var relatedProduct in (List<BeautyMoldova.Domain.Models.Product>)ViewBag.RelatedProducts)
+                {
+                    <div class="col">
+                        <div class="card h-100 shadow-sm product-card">
+                            <img src="@(string.IsNullOrEmpty(relatedProduct.MainImage) ? "/Content/images/no-image.jpg" : relatedProduct.MainImage)" 
+                                 class="card-img-top product-img" alt="@relatedProduct.Name">
+                            
+                            <div class="card-body d-flex flex-column">
+                                <p class="card-text text-muted small mb-1">@relatedProduct.Manufacturer.Name</p>
+                                <h5 class="card-title fs-6 mb-1">
+                                    <a href="@Url.Action("ProductDetails", "Catalog", new { id = relatedProduct.Id })" 
+                                       class="text-decoration-none text-dark">@relatedProduct.Name</a>
+                                </h5>
+                                
+                                <div class="mt-auto">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            @if (relatedProduct.DiscountPrice.HasValue)
+                                            {
+                                                <span class="fw-bold text-danger me-2">@relatedProduct.DiscountPrice.Value.ToString("N0") MDL</span>
+                                                <span class="text-muted text-decoration-line-through small">@relatedProduct.Price.ToString("N0") MDL</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fw-bold">@relatedProduct.Price.ToString("N0") MDL</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2 mt-3">
+                                        <button class="btn btn-sm btn-primary add-to-cart" data-product-id="@relatedProduct.Id">
+                                            <i class="fas fa-shopping-cart me-1"></i> В корзину
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section scripts {
+    <script>
+        // Функция смены основного изображения
+        function changeMainImage(src) {
+            document.getElementById('mainImage').src = src;
+            document.querySelectorAll('.thumbnail-img').forEach(img => {
+                img.classList.remove('active');
+                if (img.src === src) {
+                    img.classList.add('active');
+                }
+            });
+        }
+        
+        // Обработчики кнопок +/- для количества товара
+        document.addEventListener('DOMContentLoaded', function() {
+            const qtyInput = document.getElementById('productQty');
+            const maxQty = @Model.StockQuantity;
+            
+            document.getElementById('decreaseQty').addEventListener('click', function() {
+                const currentQty = parseInt(qtyInput.value) || 1;
+                if (currentQty > 1) {
+                    qtyInput.value = currentQty - 1;
+                }
+            });
+            
+            document.getElementById('increaseQty').addEventListener('click', function() {
+                const currentQty = parseInt(qtyInput.value) || 1;
+                if (currentQty < maxQty) {
+                    qtyInput.value = currentQty + 1;
+                }
+            });
+            
+            // Проверка при ручном вводе
+            qtyInput.addEventListener('change', function() {
+                let val = parseInt(this.value) || 1;
+                if (val < 1) val = 1;
+                if (val > maxQty) val = maxQty;
+                this.value = val;
+            });
+            
+            // Обработчик добавления в корзину
+            document.querySelectorAll('.add-to-cart').forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    const quantity = document.getElementById('productQty') ? 
+                                     parseInt(document.getElementById('productQty').value) : 1;
+                    
+                    // Здесь будет AJAX запрос для добавления в корзину
+                    alert(`Товар добавлен в корзину! Количество: ${quantity}`);
+                });
+            });
+            
+            // Звездный рейтинг для формы отзыва
+            const ratingInputs = document.querySelectorAll('input[name="Rating"]');
+            const ratingLabels = document.querySelectorAll('.star-rating-label');
+            
+            ratingLabels.forEach((label, index) => {
+                label.addEventListener('mouseover', function() {
+                    const stars = document.querySelectorAll('.star-rating-label i');
+                    const currentValue = 5 - index;
+                    
+                    stars.forEach((star, starIndex) => {
+                        if (5 - starIndex <= currentValue) {
+                            star.classList.remove('far');
+                            star.classList.add('fas');
+                        } else {
+                            star.classList.remove('fas');
+                            star.classList.add('far');
+                        }
+                    });
+                });
+                
+                label.addEventListener('click', function() {
+                    const currentValue = 5 - index;
+                    ratingInputs[index].checked = true;
+                    
+                    ratingLabels.forEach((otherLabel, otherIndex) => {
+                        const otherStar = otherLabel.querySelector('i');
+                        if (5 - otherIndex <= currentValue) {
+                            otherStar.classList.remove('far');
+                            otherStar.classList.add('fas');
+                        } else {
+                            otherStar.classList.remove('fas');
+                            otherStar.classList.add('far');
+                        }
+                    });
+                });
+            });
+            
+            // Обработчики добавления/удаления из избранного
+            const wishlistButtons = document.querySelectorAll('.add-to-wishlist, .remove-from-wishlist');
+            wishlistButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    const isAdding = this.classList.contains('add-to-wishlist');
+                    
+                    // Здесь будет AJAX запрос для работы с избранным
+                    if (isAdding) {
+                        alert('Товар добавлен в избранное!');
+                        this.innerHTML = '<i class="fas fa-heart me-1"></i> Удалить из избранного';
+                        this.classList.remove('add-to-wishlist', 'btn-outline-primary');
+                        this.classList.add('remove-from-wishlist', 'btn-outline-danger');
+                    } else {
+                        alert('Товар удален из избранного!');
+                        this.innerHTML = '<i class="far fa-heart me-1"></i> В избранное';
+                        this.classList.remove('remove-from-wishlist', 'btn-outline-danger');
+                        this.classList.add('add-to-wishlist', 'btn-outline-primary');
+                    }
+                });
+            });
+        });
+    </script>
+    
+    <style>
+        .product-gallery .main-image-container {
+            position: relative;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .product-gallery #mainImage {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        
+        .thumbnail-img {
+            cursor: pointer;
+            height: 80px;
+            object-fit: cover;
+            transition: all 0.2s;
+        }
+        
+        .thumbnail-img.active {
+            border-color: #e83e8c;
+        }
+        
+        .ratings .fas.fa-star, .ratings .far.fa-star, .ratings .fas.fa-star-half-alt {
+            font-size: 1rem;
+        }
+        
+        .card-text {
+            white-space: pre-line;
+        }
+        
+        .star-rating-label {
+            cursor: pointer;
+            color: #FFD700;
+        }
+        
+        .star-rating-label:hover i {
+            color: #FFD700;
+        }
+    </style>
+} 

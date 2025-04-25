@@ -1,0 +1,124 @@
+@model IEnumerable<BeautyMoldova.Domain.Models.WishlistItem>
+
+@{
+    ViewBag.Title = "Избранное";
+    Layout = "~/Views/Shared/_CustomerLayout.cshtml";
+}
+
+<div class="bg-white shadow-md rounded-lg p-6">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Избранное</h1>
+        
+        @if (Model.Any())
+        {
+            using (Html.BeginForm("DeleteAll", "Wishlist", FormMethod.Post, new { @class = "inline" }))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-medium"
+                        onclick="return confirm('Вы уверены, что хотите очистить всё избранное?');">
+                    <i class="far fa-trash-alt mr-1"></i> Очистить список
+                </button>
+            }
+        }
+    </div>
+    
+    @if (!Model.Any())
+    {
+        <div class="bg-gray-50 rounded-lg p-8 text-center">
+            <div class="text-gray-400 text-4xl mb-3">
+                <i class="far fa-heart"></i>
+            </div>
+            <h3 class="text-gray-700 text-lg font-medium mb-1">Ваш список избранного пуст</h3>
+            <p class="text-gray-500 mb-4">Добавляйте товары в избранное, чтобы легко найти их позже</p>
+            <a href="@Url.Action("Products", "Home")" class="inline-block px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition-colors">
+                Перейти к покупкам
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            @foreach (var item in Model)
+            {
+                var product = item.Product;
+                
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow relative">
+                    <form method="post" action="@Url.Action("RemoveFromWishlist", "Customer")">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="productId" value="@product.Id" />
+                        <button type="submit" 
+                                class="absolute top-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center text-red-500 hover:text-red-700 transition-colors z-10"
+                                title="Удалить из избранного">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </form>
+                    
+                    <a href="@Url.Action("ProductDetails", "Catalog", new { id = product.Id })" class="block">
+                        <div class="relative h-48">
+                            @if (!string.IsNullOrEmpty(product.MainImage))
+                            {
+                                <img src="~/Content/images/@product.MainImage" alt="@product.Name" class="w-full h-full object-cover">
+                            }
+                            else
+                            {
+                                <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                                    <i class="fas fa-image text-gray-400 text-4xl"></i>
+                                </div>
+                            }
+                            
+                            @if (product.DiscountPrice.HasValue && product.DiscountPrice < product.Price)
+                            {
+                                var discountPercent = Math.Round((1 - (product.DiscountPrice.Value / product.Price)) * 100);
+                                <div class="absolute top-0 left-0 bg-pink-500 text-white px-2 py-1 m-2 rounded-md text-xs font-bold">
+                                    -@discountPercent%
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="p-4">
+                            <h3 class="text-gray-800 font-medium text-md mb-1 line-clamp-2 h-12">@product.Name</h3>
+                            
+                            @if (product.Manufacturer != null)
+                            {
+                                <p class="text-gray-500 text-sm mb-2">@product.Manufacturer.Name</p>
+                            }
+                            
+                            <div class="flex items-end justify-between">
+                                <div>
+                                    @if (product.DiscountPrice.HasValue && product.DiscountPrice < product.Price)
+                                    {
+                                        <div class="flex items-center">
+                                            <span class="text-pink-600 font-bold">@product.DiscountPrice.Value MDL</span>
+                                            <span class="text-gray-400 line-through ml-2 text-sm">@product.Price MDL</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-gray-800 font-bold">@product.Price MDL</span>
+                                    }
+                                    
+                                    <div class="text-sm text-gray-500 mt-1">
+                                        @if (product.StockQuantity > 0)
+                                        {
+                                            <span class="text-green-600">В наличии</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-red-600">Нет в наличии</span>
+                                        }
+                                    </div>
+                                </div>
+                                
+                                <button type="button" 
+                                        onclick="addToCart({ id: @product.Id, name: '@product.Name.Replace("'", "\'")', price: @(product.DiscountPrice ?? product.Price), qty: 1, image: '@product.MainImage' })" 
+                                        class="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-700 hover:text-pink-500 transition-colors">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</div> 

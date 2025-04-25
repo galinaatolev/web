@@ -1,0 +1,84 @@
+@model IEnumerable<BeautyMoldova.Domain.Models.Category>
+@{
+    ViewBag.Title = "Категории";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <h1 class="h2 mb-4">Категории продуктов</h1>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var category in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm category-card">
+                    <div class="position-relative">
+                        <img src="@(string.IsNullOrEmpty(category.ImageUrl) ? "/Content/images/category-placeholder.jpg" : category.ImageUrl)" 
+                             class="card-img-top category-img" alt="@category.Name">
+                        <div class="card-img-overlay d-flex align-items-end">
+                            <h3 class="card-title text-white bg-dark bg-opacity-50 p-2 w-100">@category.Name</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <p class="card-text">@(category.Description?.Length > 120 ? category.Description.Substring(0, 120) + "..." : category.Description)</p>
+                        
+                        @if (category.ChildCategories != null && category.ChildCategories.Any())
+                        {
+                            <div class="subcategories mb-3">
+                                <h6 class="mb-2">Подкатегории:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var child in category.ChildCategories.Where(c => c.IsActive).OrderBy(c => c.DisplayOrder))
+                                    {
+                                        <a href="@Url.Action("Category", "Catalog", new { id = child.Id })" 
+                                           class="badge bg-light text-dark text-decoration-none p-2">
+                                            @child.Name
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        
+                        <div class="d-grid">
+                            <a href="@Url.Action("Category", "Catalog", new { id = category.Id })" 
+                               class="btn btn-primary">
+                                Смотреть товары
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .category-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    
+    .category-img {
+        height: 200px;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .category-card:hover .category-img {
+        transform: scale(1.05);
+    }
+    
+    .card-img-overlay {
+        background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+        transition: background 0.3s ease;
+    }
+    
+    .category-card:hover .card-img-overlay {
+        background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    }
+</style> 

@@ -1,0 +1,333 @@
+﻿@{
+    ViewBag.Title = "Личный кабинет";
+    Layout = "~/Views/Shared/_CustomerLayout.cshtml";
+    
+    var customer = ViewBag.Customer as BeautyMoldova.Domain.Models.Customer;
+    var recentPurchases = ViewBag.RecentPurchases as List<BeautyMoldova.Domain.Models.Purchase>;
+    var wishlistItems = ViewBag.WishlistItems as List<BeautyMoldova.Domain.Models.WishlistItem>;
+    var recentlyViewedProducts = ViewBag.RecentlyViewedProducts as List<BeautyMoldova.Domain.Models.Product>;
+}
+
+<div class="welcome-banner card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h3 mb-2">Добро пожаловать, @customer.FirstName!</h1>
+                <p class="text-muted mb-0">Здесь вы можете управлять своими заказами, избранными товарами и личной информацией.</p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="@Url.Action("Index", "Catalog")" class="btn btn-primary">
+                    <i class="fas fa-shopping-basket me-2"></i> Перейти в каталог
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-wrapper bg-primary-light me-3">
+                        <i class="fas fa-shopping-bag text-primary"></i>
+                    </div>
+                    <h2 class="h5 mb-0">Заказы</h2>
+                </div>
+                <p class="stat-number fw-bold mb-1">@(recentPurchases?.Count ?? 0)</p>
+                <p class="text-muted mb-0">Всего заказов</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                <a href="@Url.Action("Purchases", "Customer")" class="btn btn-outline-primary btn-sm">
+                    Просмотреть все
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-wrapper bg-danger-light me-3">
+                        <i class="fas fa-heart text-danger"></i>
+                    </div>
+                    <h2 class="h5 mb-0">Избранное</h2>
+                </div>
+                <p class="stat-number fw-bold mb-1">@(wishlistItems?.Count ?? 0)</p>
+                <p class="text-muted mb-0">Товаров в избранном</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                <a href="@Url.Action("Wishlist", "Customer")" class="btn btn-outline-primary btn-sm">
+                    Просмотреть все
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-wrapper bg-success-light me-3">
+                        <i class="fas fa-gem text-success"></i>
+                    </div>
+                    <h2 class="h5 mb-0">Бонусы</h2>
+                </div>
+                <p class="stat-number fw-bold mb-1">@customer.LoyaltyPoints</p>
+                <p class="text-muted mb-0">Накопленные бонусы</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                <a href="#" class="btn btn-outline-primary btn-sm">
+                    Как использовать
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Последние заказы -->
+@if (recentPurchases != null && recentPurchases.Any())
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center p-4">
+            <h2 class="h5 mb-0">Последние заказы</h2>
+            <a href="@Url.Action("Purchases", "Customer")" class="text-decoration-none">Все заказы</a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">№ заказа</th>
+                            <th scope="col">Дата</th>
+                            <th scope="col">Сумма</th>
+                            <th scope="col">Статус</th>
+                            <th scope="col">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var purchase in recentPurchases)
+                        {
+                            <tr>
+                                <td>#@purchase.Id</td>
+                                <td>@purchase.PurchaseDate.ToString("dd.MM.yyyy")</td>
+                                <td>@purchase.TotalAmount.ToString("N0") MDL</td>
+                                <td>
+                                    @if (purchase.Status == "Completed")
+                                    {
+                                        <span class="badge bg-success">Завершен</span>
+                                    }
+                                    else if (purchase.Status == "Processing")
+                                    {
+                                        <span class="badge bg-primary">В обработке</span>
+                                    }
+                                    else if (purchase.Status == "Shipped")
+                                    {
+                                        <span class="badge bg-info">Отправлен</span>
+                                    }
+                                    else if (purchase.Status == "Cancelled")
+                                    {
+                                        <span class="badge bg-danger">Отменен</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">@purchase.Status</span>
+                                    }
+                                </td>
+                                <td>
+                                    <a href="@Url.Action("PurchaseDetails", "Customer", new { id = purchase.Id })" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        Подробнее
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4 text-center">
+            <div class="py-4">
+                <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                <h3 class="h5">У вас еще нет заказов</h3>
+                <p class="text-muted">Перейдите в каталог, чтобы сделать первый заказ</p>
+                <a href="@Url.Action("Index", "Catalog")" class="btn btn-primary">
+                    В каталог
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Избранные товары -->
+@if (wishlistItems != null && wishlistItems.Any())
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center p-4">
+            <h2 class="h5 mb-0">Избранные товары</h2>
+            <a href="@Url.Action("Wishlist", "Customer")" class="text-decoration-none">Все избранные</a>
+        </div>
+        <div class="card-body p-4">
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                @foreach (var item in wishlistItems)
+                {
+                    <div class="col">
+                        <div class="card h-100 shadow-sm">
+                            <div class="row g-0">
+                                <div class="col-4">
+                                    <img src="@(string.IsNullOrEmpty(item.Product.MainImage) ? "/Content/images/no-image.jpg" : item.Product.MainImage)" 
+                                         class="img-fluid rounded-start h-100" style="object-fit: cover;" alt="@item.Product.Name">
+                                </div>
+                                <div class="col-8">
+                                    <div class="card-body py-2 px-3">
+                                        <h5 class="card-title h6 mb-1">
+                                            <a href="@Url.Action("ProductDetails", "Catalog", new { id = item.ProductId })" 
+                                               class="text-decoration-none text-dark">@item.Product.Name</a>
+                                        </h5>
+                                        <p class="card-text text-muted small mb-2">
+                                            @(item.Product.DiscountPrice.HasValue 
+                                                ? $"{item.Product.DiscountPrice.Value.ToString("N0")} MDL" 
+                                                : $"{item.Product.Price.ToString("N0")} MDL")
+                                        </p>
+                                        <div class="d-flex justify-content-between align-items-center mt-2">
+                                            <button class="btn btn-sm btn-primary add-to-cart" 
+                                                    data-product-id="@item.ProductId">
+                                                <i class="fas fa-shopping-cart"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger remove-from-wishlist" 
+                                                    data-product-id="@item.ProductId">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Недавно просмотренные товары -->
+@if (recentlyViewedProducts != null && recentlyViewedProducts.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent border-0 p-4">
+            <h2 class="h5 mb-0">Недавно просмотренные товары</h2>
+        </div>
+        <div class="card-body p-4">
+            <div class="row row-cols-2 row-cols-md-4 g-4">
+                @foreach (var product in recentlyViewedProducts)
+                {
+                    <div class="col">
+                        <div class="card h-100 shadow-sm">
+                            <img src="@(string.IsNullOrEmpty(product.MainImage) ? "/Content/images/no-image.jpg" : product.MainImage)" 
+                                 class="card-img-top" style="height: 120px; object-fit: cover;" alt="@product.Name">
+                            <div class="card-body">
+                                <h5 class="card-title h6 mb-1">
+                                    <a href="@Url.Action("ProductDetails", "Catalog", new { id = product.Id })" 
+                                       class="text-decoration-none text-dark">@product.Name</a>
+                                </h5>
+                                <p class="card-text text-muted small mb-2">
+                                    @(product.DiscountPrice.HasValue 
+                                        ? $"{product.DiscountPrice.Value.ToString("N0")} MDL" 
+                                        : $"{product.Price.ToString("N0")} MDL")
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .welcome-banner {
+        background: linear-gradient(to right, #f9f4f8, #fceff5);
+        border-radius: 10px;
+    }
+    
+    .icon-wrapper {
+        width: 45px;
+        height: 45px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .icon-wrapper i {
+        font-size: 1.5rem;
+    }
+    
+    .bg-primary-light {
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    
+    .bg-danger-light {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    
+    .bg-success-light {
+        background-color: rgba(25, 135, 84, 0.1);
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+</style>
+
+<script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Обработчик добавления в корзину
+            document.querySelectorAll('.add-to-cart').forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    
+                    // Здесь будет AJAX запрос для добавления в корзину
+                    alert('Товар добавлен в корзину!');
+                });
+            });
+            
+            // Обработчик удаления из избранного
+            document.querySelectorAll('.remove-from-wishlist').forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    const card = this.closest('.col');
+                    
+                    // AJAX запрос для удаления из избранного
+                    fetch('@Url.Action("RemoveFromWishlist", "Customer")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ productId: productId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            card.remove();
+                            alert('Товар удален из избранного!');
+                        } else {
+                            alert(data.message || 'Произошла ошибка при удалении товара из избранного.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Произошла ошибка при удалении товара из избранного.');
+                    });
+                });
+            });
+        });
+    </script>

@@ -1,0 +1,152 @@
+@model IEnumerable<BeautyMoldova.Domain.Models.Notification>
+@{
+    ViewBag.Title = "Уведомления";
+    Layout = "~/Views/Shared/_CustomerLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">Уведомления</h1>
+    
+    <div class="d-flex">
+        @if (Model.Any(n => !n.IsRead))
+        {
+            using (Html.BeginForm("MarkAllAsRead", "Notification", FormMethod.Post, new { @class = "me-2" }))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-check-double me-1"></i> Отметить все как прочитанные
+                </button>
+            }
+        }
+        
+        @if (Model.Any())
+        {
+            using (Html.BeginForm("DeleteAll", "Notification", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger" 
+                        onclick="return confirm('Вы уверены, что хотите удалить все уведомления?')">
+                    <i class="fas fa-trash me-1"></i> Удалить все
+                </button>
+            }
+        }
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-5 text-center">
+            <div class="py-4">
+                <i class="fas fa-bell-slash fa-4x text-muted mb-4"></i>
+                <h2 class="h4 mb-3">У вас нет уведомлений</h2>
+                <p class="text-muted mb-0">Здесь будут отображаться уведомления о ваших заказах, акциях и других событиях.</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="list-group list-group-flush notification-list">
+            @foreach (var notification in Model)
+            {
+                <div class="list-group-item p-3 @(notification.IsRead ? "" : "unread")">
+                    <div class="d-flex">
+                        <div class="notification-icon me-3">
+                            @{
+                                string iconClass;
+                                switch (notification.Type)
+                                {
+                                    case "Success":
+                                        iconClass = "fa-check-circle text-success";
+                                        break;
+                                    case "Warning":
+                                        iconClass = "fa-exclamation-triangle text-warning";
+                                        break;
+                                    case "Error":
+                                        iconClass = "fa-times-circle text-danger";
+                                        break;
+                                    default:
+                                        iconClass = "fa-info-circle text-primary";
+                                        break;
+                                }
+                            }
+                            <i class="fas @iconClass fa-2x"></i>
+                        </div>
+                        
+                        <div class="notification-content flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <h5 class="mb-0">@notification.Title</h5>
+                                <small class="text-muted">@notification.CreatedDate.ToString("dd.MM.yyyy HH:mm")</small>
+                            </div>
+                            
+                            <p class="mb-2">@notification.Message</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    @if (!string.IsNullOrEmpty(notification.RelatedEntityType) && notification.RelatedEntityId.HasValue)
+                                    {
+                                        <a href="@GetRelatedEntityUrl(notification.RelatedEntityType, notification.RelatedEntityId.Value)" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            Подробнее
+                                        </a>
+                                    }
+                                </div>
+                                
+                                <div>
+                                    @using (Html.BeginForm("Delete", "Notification", FormMethod.Post, new { @class = "d-inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@notification.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                onclick="return confirm('Вы уверены, что хотите удалить это уведомление?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    }
+                                    
+                                    @if (!notification.IsRead)
+                                    {
+                                        <a href="@Url.Action("Details", "Notification", new { id = notification.Id })" 
+                                           class="btn btn-sm btn-outline-primary ms-1">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@functions {
+    public string GetRelatedEntityUrl(string entityType, int entityId)
+    {
+        switch (entityType)
+        {
+            case "Product":
+                return Url.Action("ProductDetails", "Catalog", new { id = entityId });
+            case "Order":
+                return Url.Action("PurchaseDetails", "Customer", new { id = entityId });
+            case "Promotion":
+                return Url.Action("Details", "Promotion", new { id = entityId });
+            default:
+                return "#";
+        }
+    }
+}
+
+<style>
+    .notification-list .unread {
+        background-color: #f8f9fa;
+        border-left: 3px solid #e83e8c;
+    }
+    
+    .notification-icon {
+        width: 40px;
+        text-align: center;
+    }
+</style> 

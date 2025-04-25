@@ -1,0 +1,107 @@
+@model BeautyMoldova.Domain.Models.Customer
+
+@{
+    ViewBag.Title = "Мой профиль";
+    Layout = "~/Views/Shared/_CustomerLayout.cshtml";
+}
+
+<div class="bg-white shadow-md rounded-lg p-6">
+    <div class="flex items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Мой профиль</h1>
+    </div>
+    
+    @using (Html.BeginForm("UpdateProfile", "Customer", FormMethod.Post, new { @class = "space-y-6" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(true, "", new { @class = "text-red-500 mb-4" })
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Базовая информация -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Основная информация</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="Username" class="block text-sm font-medium text-gray-700 mb-1">Имя пользователя</label>
+                        @Html.TextBoxFor(m => m.Username, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", @readonly = "readonly" })
+                        @Html.ValidationMessageFor(m => m.Username, "", new { @class = "text-red-500 text-xs mt-1" })
+                    </div>
+                    
+                    <div>
+                        <label for="Email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        @Html.TextBoxFor(m => m.Email, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", type = "email" })
+                        @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-red-500 text-xs mt-1" })
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="FirstName" class="block text-sm font-medium text-gray-700 mb-1">Имя</label>
+                            @Html.TextBoxFor(m => m.FirstName, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" })
+                            @Html.ValidationMessageFor(m => m.FirstName, "", new { @class = "text-red-500 text-xs mt-1" })
+                        </div>
+                        
+                        <div>
+                            <label for="LastName" class="block text-sm font-medium text-gray-700 mb-1">Фамилия</label>
+                            @Html.TextBoxFor(m => m.LastName, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" })
+                            @Html.ValidationMessageFor(m => m.LastName, "", new { @class = "text-red-500 text-xs mt-1" })
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="PhoneNumber" class="block text-sm font-medium text-gray-700 mb-1">Номер телефона</label>
+                        @Html.TextBoxFor(m => m.PhoneNumber, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" })
+                        @Html.ValidationMessageFor(m => m.PhoneNumber, "", new { @class = "text-red-500 text-xs mt-1" })
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Адресная информация -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Адреса доставки</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="ShippingAddress" class="block text-sm font-medium text-gray-700 mb-1">Адрес доставки</label>
+                        @Html.TextAreaFor(m => m.ShippingAddress, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", rows = "3" })
+                        @Html.ValidationMessageFor(m => m.ShippingAddress, "", new { @class = "text-red-500 text-xs mt-1" })
+                    </div>
+                    
+                    <div>
+                        <label for="BillingAddress" class="block text-sm font-medium text-gray-700 mb-1">Адрес для выставления счета</label>
+                        @Html.TextAreaFor(m => m.BillingAddress, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", rows = "3" })
+                        @Html.ValidationMessageFor(m => m.BillingAddress, "", new { @class = "text-red-500 text-xs mt-1" })
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-50 rounded-lg p-4">
+            <h3 class="text-lg font-medium text-gray-800 mb-4">Информация об аккаунте</h3>
+            
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <div class="block text-sm font-medium text-gray-700 mb-1">Дата регистрации</div>
+                        <div class="text-gray-800">@Model.RegistrationDate.ToShortDateString()</div>
+                    </div>
+                    
+                    <div>
+                        <div class="block text-sm font-medium text-gray-700 mb-1">Последний вход</div>
+                        <div class="text-gray-800">@(Model.LastLoginDate.HasValue ? Model.LastLoginDate.Value.ToShortDateString() : "—")</div>
+                    </div>
+                    
+                    <div>
+                        <div class="block text-sm font-medium text-gray-700 mb-1">Бонусные баллы</div>
+                        <div class="text-gray-800">@Model.LoyaltyPoints</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex justify-end">
+            <button type="submit" class="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition-colors">
+                Сохранить изменения
+            </button>
+        </div>
+    }
+</div> 
