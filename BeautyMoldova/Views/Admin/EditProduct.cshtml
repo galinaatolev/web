@@ -1,0 +1,268 @@
+@model BeautyMoldova.Domain.Models.Product
+
+@{
+    ViewBag.Title = "Edit Product";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex items-center mb-6">
+        <a href="@Url.Action("Products")" class="text-gray-500 hover:text-gray-700 mr-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-800">Edit Product: @Model.Name</h1>
+    </div>
+    
+    @using (Html.BeginForm("EditProduct", "Admin", FormMethod.Post, new { enctype = "multipart/form-data", @class = "space-y-6" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(m => m.Id)
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Left column - basic information -->
+            <div class="space-y-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Basic Information</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="Name" class="block text-sm font-medium text-gray-700 mb-1">Product Name <span class="text-red-500">*</span></label>
+                            @Html.TextBoxFor(m => m.Name, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", placeholder = "Enter product name" })
+                            @Html.ValidationMessageFor(m => m.Name, "", new { @class = "text-red-500 text-xs mt-1" })
+                        </div>
+                        
+                        <div>
+                            <label for="ShortDescription" class="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                            <textarea id="ShortDescription" name="ShortDescription" rows="2" 
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" 
+                                    placeholder="Enter short product description">@Model.ShortDescription</textarea>
+                            @Html.ValidationMessageFor(m => m.ShortDescription, "", new { @class = "text-red-500 text-xs mt-1" })
+                        </div>
+                        
+                        <div>
+                            <label for="Description" class="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
+                            @Html.TextAreaFor(m => m.Description, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", rows = "4", placeholder = "Enter full product description" })
+                            @Html.ValidationMessageFor(m => m.Description, "", new { @class = "text-red-500 text-xs mt-1" })
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="CategoryId" class="block text-sm font-medium text-gray-700 mb-1">Category <span class="text-red-500">*</span></label>
+                                @Html.DropDownListFor(m => m.CategoryId, (SelectList)ViewBag.Categories, "-- Select category --", new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" })
+                                @Html.ValidationMessageFor(m => m.CategoryId, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+                            
+                            <div>
+                                <label for="ManufacturerId" class="block text-sm font-medium text-gray-700 mb-1">Manufacturer <span class="text-red-500">*</span></label>
+                                @Html.DropDownListFor(m => m.ManufacturerId, (SelectList)ViewBag.Manufacturers, "-- Select manufacturer --", new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" })
+                                @Html.ValidationMessageFor(m => m.ManufacturerId, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Pricing and Availability</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="Price" class="block text-sm font-medium text-gray-700 mb-1">Price <span class="text-red-500">*</span></label>
+                                <div class="relative rounded-md shadow-sm">
+                                    <input type="number" step="0.01" id="Price" name="Price" value="@Model.Price" 
+                                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50 pr-12" 
+                                           placeholder="0.00">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 sm:text-sm">MDL</span>
+                                    </div>
+                                </div>
+                                @Html.ValidationMessageFor(m => m.Price, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+                            
+                            <div>
+                                <label for="DiscountPrice" class="block text-sm font-medium text-gray-700 mb-1">Discount Price</label>
+                                <div class="relative rounded-md shadow-sm">
+                                    <input type="number" step="0.01" id="DiscountPrice" name="DiscountPrice" value="@Model.DiscountPrice" 
+                                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50 pr-12" 
+                                           placeholder="0.00">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 sm:text-sm">MDL</span>
+                                    </div>
+                                </div>
+                                @Html.ValidationMessageFor(m => m.DiscountPrice, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="StockQuantity" class="block text-sm font-medium text-gray-700 mb-1">Stock Quantity <span class="text-red-500">*</span></label>
+                                <input type="number" id="StockQuantity" name="StockQuantity" value="@Model.StockQuantity" 
+                                       class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" 
+                                       placeholder="0" min="0">
+                                @Html.ValidationMessageFor(m => m.StockQuantity, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+                            
+                            <div>
+                                <label for="SKU" class="block text-sm font-medium text-gray-700 mb-1">SKU (product code)</label>
+                                @Html.TextBoxFor(m => m.SKU, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", placeholder = "Enter product SKU" })
+                                @Html.ValidationMessageFor(m => m.SKU, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-6">
+                            <div class="flex items-center">
+                                @Html.CheckBoxFor(m => m.IsAvailable, new { @class = "rounded border-gray-300 text-pink-600 focus:ring-pink-500 h-4 w-4" })
+                                <label for="IsAvailable" class="ml-2 block text-sm text-gray-700">Available for sale</label>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                @Html.CheckBoxFor(m => m.IsFeatured, new { @class = "rounded border-gray-300 text-pink-600 focus:ring-pink-500 h-4 w-4" })
+                                <label for="IsFeatured" class="ml-2 block text-sm text-gray-700">Featured product</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right column - Additional information -->
+            <div class="space-y-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Images and Media</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="mainImage" class="block text-sm font-medium text-gray-700 mb-1">Main Image</label>
+                            <div class="mt-1 flex items-center">
+                                <div class="h-32 w-32 border-2 border-gray-300 border-dashed rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+                                    @if (!string.IsNullOrEmpty(Model.MainImage))
+                                    {
+                                        <img id="currentImage" src="~/Content/images/@Model.MainImage" alt="Current Image" class="h-full w-full object-cover">
+                                        <img id="imagePreview" src="#" alt="Preview" class="h-full w-full object-cover hidden">
+                                        <span id="uploadIcon" class="text-gray-400 hidden">
+                                            <i class="fas fa-upload text-2xl"></i>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <img id="imagePreview" src="#" alt="Preview" class="h-full w-full object-cover hidden">
+                                        <span id="uploadIcon" class="text-gray-400">
+                                            <i class="fas fa-upload text-2xl"></i>
+                                        </span>
+                                    }
+                                </div>
+                                <input type="file" id="mainImage" name="mainImage" accept="image/*" 
+                                       class="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Recommended size: 800x800 pixels, JPG or PNG format. Leave empty to keep current image.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Additional Specifications</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="SkinType" class="block text-sm font-medium text-gray-700 mb-1">Skin Type</label>
+                            <select id="SkinType" name="SkinType" 
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50">
+                                <option value="">-- Select skin type --</option>
+                                <option value="Normal" @(Model.SkinType == "Normal" ? "selected" : "")>Normal</option>
+                                <option value="Dry" @(Model.SkinType == "Dry" ? "selected" : "")>Dry</option>
+                                <option value="Oily" @(Model.SkinType == "Oily" ? "selected" : "")>Oily</option>
+                                <option value="Combination" @(Model.SkinType == "Combination" ? "selected" : "")>Combination</option>
+                                <option value="Sensitive" @(Model.SkinType == "Sensitive" ? "selected" : "")>Sensitive</option>
+                                <option value="All Types" @(Model.SkinType == "All Types" ? "selected" : "")>All Types</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="ApplicationArea" class="block text-sm font-medium text-gray-700 mb-1">Application Area</label>
+                            <select id="ApplicationArea" name="ApplicationArea" 
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50">
+                                <option value="">-- Select application area --</option>
+                                <option value="Face" @(Model.ApplicationArea == "Face" ? "selected" : "")>Face</option>
+                                <option value="Body" @(Model.ApplicationArea == "Body" ? "selected" : "")>Body</option>
+                                <option value="Hair" @(Model.ApplicationArea == "Hair" ? "selected" : "")>Hair</option>
+                                <option value="Lips" @(Model.ApplicationArea == "Lips" ? "selected" : "")>Lips</option>
+                                <option value="Eyes" @(Model.ApplicationArea == "Eyes" ? "selected" : "")>Eyes</option>
+                                <option value="Nails" @(Model.ApplicationArea == "Nails" ? "selected" : "")>Nails</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="VolumeWeight" class="block text-sm font-medium text-gray-700 mb-1">Volume/Weight</label>
+                            <input type="text" id="VolumeWeight" name="VolumeWeight" value="@Model.VolumeWeight" 
+                                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" 
+                                  placeholder="Example: 100 ml, 50 g, etc.">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                            <div class="grid grid-cols-2 gap-x-3 gap-y-2 max-h-40 overflow-y-auto p-2 border border-gray-300 rounded-md">
+                                @foreach (var tag in ViewBag.Tags)
+                                {
+                                    var isSelected = ViewBag.SelectedTags != null && ViewBag.SelectedTags.Contains(tag.Id);
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="tag_@tag.Id" name="selectedTags" value="@tag.Id" 
+                                               class="rounded border-gray-300 text-pink-600 focus:ring-pink-500 h-4 w-4"
+                                               @(isSelected ? "checked" : "")>
+                                        <label for="tag_@tag.Id" class="ml-2 block text-sm text-gray-700">@tag.Name</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="Ingredients" class="block text-sm font-medium text-gray-700 mb-1">Ingredients</label>
+                            @Html.TextAreaFor(m => m.Ingredients, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", rows = "3", placeholder = "Product ingredients" })
+                        </div>
+                        
+                        <div>
+                            <label for="HowToUse" class="block text-sm font-medium text-gray-700 mb-1">How To Use</label>
+                            @Html.TextAreaFor(m => m.HowToUse, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", rows = "3", placeholder = "Instructions on how to use the product" })
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex justify-end space-x-3 mt-6">
+            <a href="@Url.Action("Products")" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                Update Product
+            </button>
+        </div>
+    }
+</div>
+
+@section scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Image preview functionality
+            const imageInput = document.getElementById('mainImage');
+            const imagePreview = document.getElementById('imagePreview');
+            const uploadIcon = document.getElementById('uploadIcon');
+            const currentImage = document.getElementById('currentImage');
+            
+            imageInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.classList.remove('hidden');
+                        uploadIcon.classList.add('hidden');
+                        if (currentImage) {
+                            currentImage.classList.add('hidden');
+                        }
+                    }
+                    
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        });
+    </script>
+} 

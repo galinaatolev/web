@@ -1,0 +1,236 @@
+@model IEnumerable<BeautyMoldova.Domain.Models.Promotion>
+@{
+    ViewBag.Title = "Promotions and Special Offers";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">Promotions and Special Offers</h1>
+        
+        <div class="d-flex align-items-center">
+            @using (Html.BeginForm("Search", "Promotion", FormMethod.Post, new { @class = "d-flex" }))
+            {
+                <div class="input-group">
+                    <input type="text" class="form-control" name="query" placeholder="Search promotions..." 
+                           value="@ViewBag.SearchQuery">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            }
+            
+            <a href="@Url.Action("Discounts", "Promotion")" class="btn btn-outline-primary ms-3">
+                <i class="fas fa-tags me-1"></i> All Discounts
+            </a>
+        </div>
+    </div>
+    
+    @if (!Model.Any())
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-5 text-center">
+                <div class="py-4">
+                    <i class="fas fa-percentage fa-4x text-muted mb-4"></i>
+                    <h2 class="h4 mb-3">No active promotions at the moment</h2>
+                    <p class="text-muted mb-4">But you can still check out our discounted products.</p>
+                    <a href="@Url.Action("Discounts", "Promotion")" class="btn btn-primary">
+                        <i class="fas fa-tags me-2"></i> View Discounts
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            @foreach (var promotion in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm promotion-card">
+                        <div class="position-relative">
+                            <img src="@Url.Content(string.IsNullOrEmpty(promotion.ImageUrl?.ToString()) ? "~/Content/images/promotion-placeholder.jpg" : promotion.ImageUrl.ToString())" 
+                                 class="card-img-top promotion-img" alt="@promotion.Title">
+                            
+                            <!-- Promotion time left -->
+                            @{
+                                var promotionEndDate = (DateTime)promotion.EndDate;
+                                var daysLeft = (int)(promotionEndDate - DateTime.Now).TotalDays;
+                                var hoursLeft = (int)(promotionEndDate - DateTime.Now).TotalHours % 24;
+                            }
+                            
+                            <div class="promotion-countdown position-absolute bottom-0 start-0 m-3 p-2 bg-dark bg-opacity-75 text-white rounded">
+                                @if (daysLeft > 0)
+                                {
+                                    <i class="far fa-clock me-1"></i> 
+                                    <span>Time left: @daysLeft @(daysLeft == 1 ? "day" : "days")</span>
+                                }
+                                else if (hoursLeft > 0)
+                                {
+                                    <i class="far fa-clock me-1"></i> 
+                                    <span>Time left: @hoursLeft @(hoursLeft == 1 ? "hour" : "hours")</span>
+                                }
+                                else
+                                {
+                                    <i class="far fa-clock me-1"></i> 
+                                    <span>Ends today!</span>
+                                }
+                            </div>
+                            
+                            <!-- Discount percentage -->
+                            @{
+                                var discountPercent = promotion.DiscountPercent is int ? (int)promotion.DiscountPercent : 0;
+                            }
+                            @if (discountPercent > 0)
+                            {
+                                <span class="badge bg-danger position-absolute top-0 end-0 m-3 p-2 fs-5">-@discountPercent%</span>
+                            }
+                        </div>
+                        
+                        <div class="card-body p-4">
+                            <h2 class="card-title h4 mb-2">@promotion.Title</h2>
+                            <p class="card-text text-muted">
+                                @if (promotion.Description != null && promotion.Description.Length > 150)
+                                {
+                                    @(promotion.Description.Substring(0, 150) + "...")
+                                }
+                                else
+                                {
+                                    @promotion.Description
+                                }
+                            </p>
+                            
+                            @if (!string.IsNullOrEmpty(promotion.PromoCode))
+                            {
+                                <div class="promo-code-container mb-3">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" value="@promotion.PromoCode" readonly>
+                                        <button class="btn btn-outline-primary copy-promo" type="button" data-promo="@promotion.PromoCode">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Copy the promo code to use during checkout</small>
+                                </div>
+                            }
+                            
+                            <div class="promotion-dates text-muted small mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>
+                                        <i class="far fa-calendar-alt me-1"></i> Start: @(((DateTime)promotion.StartDate).ToString("MM/dd/yyyy"))
+                                    </span>
+                                    <span>
+                                        <i class="far fa-calendar-alt me-1"></i> End: @(((DateTime)promotion.EndDate).ToString("MM/dd/yyyy"))
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <a href="@Url.Action("Details", "Promotion", new { id = promotion.Id })" class="btn btn-primary">
+                                    More Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    
+    <!-- Discount banner -->
+    <div class="card border-0 shadow-sm mt-5 discount-banner">
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <div class="col-lg-6">
+                    <img src="@Url.Content("~/Content/images/discount-banner.jpg")" class="img-fluid discount-img" alt="Discounts">
+                </div>
+                <div class="col-lg-6">
+                    <div class="discount-content p-5">
+                        <h2 class="h3 mb-3">Up to 50% off selected products</h2>
+                        <p class="mb-4">Don't miss the opportunity to purchase quality cosmetics at great prices. A wide selection of products at reduced prices.</p>
+                        <a href="@Url.Action("Discounts", "Promotion")" class="btn btn-danger btn-lg">
+                            <i class="fas fa-tags me-2"></i> View All Discounts
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .promotion-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .promotion-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    
+    .promotion-img {
+        height: 220px;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .promotion-card:hover .promotion-img {
+        transform: scale(1.05);
+    }
+    
+    .promotion-countdown {
+        font-size: 0.875rem;
+    }
+    
+    .discount-banner {
+        overflow: hidden;
+        border-radius: 10px;
+    }
+    
+    .discount-img {
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .discount-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+        background: linear-gradient(135deg, #f8f4f8 0%, #fff1f6 100%);
+    }
+</style>
+
+@section scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Copy promo code functionality
+            document.querySelectorAll('.copy-promo').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var promoCode = this.getAttribute('data-promo');
+                    var tempInput = document.createElement('input');
+                    tempInput.value = promoCode;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+                    
+                    // Change icon for feedback
+                    var icon = this.querySelector('i');
+                    icon.classList.remove('fa-copy');
+                    icon.classList.add('fa-check');
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-success');
+                    
+                    // Reset after 2 seconds
+                    setTimeout(function() {
+                        icon.classList.remove('fa-check');
+                        icon.classList.add('fa-copy');
+                        button.classList.remove('btn-success');
+                        button.classList.add('btn-outline-primary');
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+} 

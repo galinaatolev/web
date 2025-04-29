@@ -1,0 +1,191 @@
+﻿@model IEnumerable<BeautyMoldova.Domain.Models.Product>
+
+@{
+    ViewBag.Title = "Product Management";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0">Product Management</h1>
+        <a href="@Url.Action("CreateProduct")" class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center w-full md:w-auto">
+            <i class="fas fa-plus mr-2"></i> Add New Product
+        </a>
+    </div>
+    
+    <!-- Search Filters -->
+    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+        @using (Html.BeginForm("Products", "Admin", FormMethod.Get, new { @class = "space-y-4" }))
+        {
+            <div class="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0">
+                <div class="flex-1">
+                    <label for="searchString" class="block text-sm font-medium text-gray-700 mb-1">Search by name or description</label>
+                    <input type="text" name="searchString" id="searchString" value="@ViewBag.SearchString" 
+                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" 
+                           placeholder="Enter search text...">
+                </div>
+                
+                <div class="w-full md:w-1/4">
+                    <label for="categoryId" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select name="categoryId" id="categoryId" 
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50">
+                        <option value="">All Categories</option>
+                        @foreach (var category in ViewBag.Categories)
+                        {
+                            <option value="@category.Id" @(ViewBag.CategoryId == category.Id ? "selected" : "")>@category.Name</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="w-full md:w-1/4">
+                    <label for="manufacturerId" class="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
+                    <select name="manufacturerId" id="manufacturerId" 
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50">
+                        <option value="">All Manufacturers</option>
+                        @foreach (var manufacturer in ViewBag.Manufacturers)
+                        {
+                            <option value="@manufacturer.Id" @(ViewBag.ManufacturerId == manufacturer.Id ? "selected" : "")>@manufacturer.Name</option>
+                        }
+                    </select>
+                </div>
+                
+                <div>
+                    <button type="submit" class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                        <i class="fas fa-search mr-1"></i> Search
+                    </button>
+                    <a href="@Url.Action("Products")" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md font-medium transition-colors ml-2">
+                        Reset
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+    
+    <!-- Products Table -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manufacturer</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">In Stock</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @if (Model.Any())
+                {
+                    foreach (var product in Model)
+                    {
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="h-12 w-12 rounded-md overflow-hidden bg-gray-100">
+                                    @if (!string.IsNullOrEmpty(product.MainImage))
+                                    {
+                                        <img src="~/Content/images/@product.MainImage" alt="@product.Name" class="h-full w-full object-cover">
+                                    }
+                                    else
+                                    {
+                                        <div class="h-full w-full flex items-center justify-center text-gray-400">
+                                            <i class="fas fa-image"></i>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900">@product.Name</div>
+                                <div class="text-xs text-gray-500 mt-1">SKU: @product.SKU</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                @(product.Category?.Name ?? "No category")
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                @(product.Manufacturer?.Name ?? "No manufacturer")
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if (product.DiscountPrice.HasValue && product.DiscountPrice < product.Price)
+                                {
+                                    <div class="text-sm font-medium text-pink-600">@product.DiscountPrice.Value MDL</div>
+                                    <div class="text-xs text-gray-400 line-through">@product.Price MDL</div>
+                                }
+                                else
+                                {
+                                    <div class="text-sm font-medium text-gray-900">@product.Price MDL</div>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm @(product.StockQuantity > 0 ? "text-green-800" : "text-red-800")">
+                                    @product.StockQuantity pcs.
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if (product.IsAvailable)
+                                {
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Inactive
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <a href="@Url.Action("EditProduct", new { id = product.Id })" 
+                                       class="text-blue-600 hover:text-blue-900 transition-colors" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="@Url.Action("DeleteProduct", new { id = product.Id })" 
+                                       class="text-red-600 hover:text-red-900 transition-colors" title="Delete">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                    <a href="@Url.Action("ProductDetails", "Home", new { id = product.Id })" target="_blank" 
+                                       class="text-gray-600 hover:text-gray-900 transition-colors" title="View on site">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="px-6 py-10 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i>
+                                <p class="text-lg font-medium">No products available</p>
+                                <p class="text-sm mt-1">No products found or don't match search criteria</p>
+                                <a href="@Url.Action("CreateProduct")" class="mt-4 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                                    <i class="fas fa-plus mr-2"></i> Add new product
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+        $(document).ready(function() {
+            // Row highlighting on hover
+            $('table tbody tr').hover(
+                function() { $(this).addClass('bg-gray-50'); },
+                function() { $(this).removeClass('bg-gray-50'); }
+            );
+            
+            // Select inputs initialization
+            $('#categoryId, #manufacturerId').change(function() {
+                $(this).closest('form').submit();
+            });
+        });
+    </script>

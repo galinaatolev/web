@@ -1,0 +1,135 @@
+@model BeautyMoldova.Domain.Models.Manufacturer
+
+@{
+    ViewBag.Title = "Delete Manufacturer";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex items-center mb-6">
+        <a href="@Url.Action("Manufacturers")" class="text-gray-500 hover:text-gray-700 mr-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-800">Delete Manufacturer</h1>
+    </div>
+    
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-red-800 font-medium">Warning!</h3>
+                <div class="text-red-700 text-sm">
+                    <p>Are you sure you want to delete this manufacturer? This action cannot be undone.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+        <h3 class="text-lg font-medium text-gray-800 mb-3">Manufacturer Details</h3>
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Name</dt>
+                <dd class="mt-1 text-sm text-gray-900">@Model.Name</dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Country</dt>
+                <dd class="mt-1 text-sm text-gray-900">@(string.IsNullOrEmpty(Model.Country) ? "Not specified" : Model.Country)</dd>
+            </div>
+            
+            <div class="md:col-span-2">
+                <dt class="text-sm font-medium text-gray-500">Description</dt>
+                <dd class="mt-1 text-sm text-gray-900">@(string.IsNullOrEmpty(Model.Description) ? "No description" : Model.Description)</dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Website</dt>
+                <dd class="mt-1 text-sm text-gray-900">
+                    @if (!string.IsNullOrEmpty(Model.Website))
+                    {
+                        <a href="@Model.Website" target="_blank" class="text-blue-600 hover:text-blue-800">@Model.Website</a>
+                    }
+                    else
+                    {
+                        <span>Not specified</span>
+                    }
+                </dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Established</dt>
+                <dd class="mt-1 text-sm text-gray-900">@Model.EstablishedYear.ToString("yyyy")</dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Type</dt>
+                <dd class="mt-1 text-sm text-gray-900">
+                    @if (Model.IsLuxury)
+                    {
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Luxury
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            Regular
+                        </span>
+                    }
+                </dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Status</dt>
+                <dd class="mt-1 text-sm text-gray-900">
+                    @if (Model.IsActive)
+                    {
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Active
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Inactive
+                        </span>
+                    }
+                </dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Logo</dt>
+                <dd class="mt-1 text-sm text-gray-900">
+                    @if (!string.IsNullOrEmpty(Model.Logo))
+                    {
+                        <div class="h-16 w-16 rounded-md overflow-hidden bg-gray-100">
+                            <img src="~/Content/images/@Model.Logo" alt="@Model.Name" class="h-full w-full object-contain">
+                        </div>
+                    }
+                    else
+                    {
+                        <span>No logo</span>
+                    }
+                </dd>
+            </div>
+        </dl>
+    </div>
+    
+    @using (Html.BeginForm("DeleteManufacturer", "Admin", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(m => m.Id)
+        
+        <div class="flex justify-end space-x-3 pt-4 border-t">
+            <a href="@Url.Action("Manufacturers")" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                Delete Manufacturer
+            </button>
+        </div>
+    }
+</div> 

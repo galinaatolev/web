@@ -1,0 +1,81 @@
+﻿@model IEnumerable<BeautyMoldova.Domain.Models.Role>
+@{
+    ViewBag.Title = "Role Management";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">Role Management</h1>
+    
+    <a href="@Url.Action("CreateRole", "Admin")" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Create Role
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-5 text-center">
+            <div class="py-4">
+                <i class="fas fa-user-tag fa-4x text-muted mb-4"></i>
+                <h2 class="h4 mb-3">No Roles Available</h2>
+                <p class="text-muted mb-4">Create your first role to assign to users.</p>
+                <a href="@Url.Action("CreateRole", "Admin")" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i> Create Role
+                </a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Creation Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var role in Model)
+                        {
+                            <tr>
+                                <td>@role.Name</td>
+                                <td>@role.Description</td>
+                                <td>@role.CreatedDate.ToString("dd.MM.yyyy")</td>
+                                <td>
+                                    @if (role.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactive</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="@Url.Action("EditRole", "Admin", new { id = role.Id })" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="@Url.Action("DeleteRole", "Admin", new { id = role.Id })" 
+                                           class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+} 

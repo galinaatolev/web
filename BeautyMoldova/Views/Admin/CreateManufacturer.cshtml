@@ -1,0 +1,139 @@
+@model BeautyMoldova.Domain.Models.Manufacturer
+
+@{
+    ViewBag.Title = "Create Manufacturer";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex items-center mb-6">
+        <a href="@Url.Action("Manufacturers")" class="text-gray-500 hover:text-gray-700 mr-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-800">Create New Manufacturer</h1>
+    </div>
+    
+    @using (Html.BeginForm("CreateManufacturer", "Admin", FormMethod.Post, new { enctype = "multipart/form-data", @class = "space-y-6" }))
+    {
+        @Html.AntiForgeryToken()
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Left column - basic information -->
+            <div class="space-y-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Basic Information</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="Name" class="block text-sm font-medium text-gray-700 mb-1">Manufacturer Name <span class="text-red-500">*</span></label>
+                            @Html.TextBoxFor(m => m.Name, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", placeholder = "Enter manufacturer name" })
+                            @Html.ValidationMessageFor(m => m.Name, "", new { @class = "text-red-500 text-xs mt-1" })
+                        </div>
+                        
+                        <div>
+                            <label for="Description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            @Html.TextAreaFor(m => m.Description, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", rows = "4", placeholder = "Enter manufacturer description" })
+                            @Html.ValidationMessageFor(m => m.Description, "", new { @class = "text-red-500 text-xs mt-1" })
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="Country" class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                                @Html.TextBoxFor(m => m.Country, new { @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", placeholder = "Enter country" })
+                                @Html.ValidationMessageFor(m => m.Country, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+                            
+                            <div>
+                                <label for="EstablishedYear" class="block text-sm font-medium text-gray-700 mb-1">Established Year</label>
+                                @Html.TextBoxFor(m => m.EstablishedYear, "{0:yyyy-MM-dd}", new { type = "date", @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" })
+                                @Html.ValidationMessageFor(m => m.EstablishedYear, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="Website" class="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                            @Html.TextBoxFor(m => m.Website, new { type = "url", @class = "w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50", placeholder = "https://example.com" })
+                            @Html.ValidationMessageFor(m => m.Website, "", new { @class = "text-red-500 text-xs mt-1" })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Display Settings</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="SortOrder" class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
+                            <input type="number" id="SortOrder" name="SortOrder" value="@(Model?.SortOrder ?? 0)" 
+                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" 
+                                   placeholder="0" min="0">
+                            @Html.ValidationMessageFor(m => m.SortOrder, "", new { @class = "text-red-500 text-xs mt-1" })
+                            <p class="text-xs text-gray-500 mt-1">Determines the order in which manufacturers are displayed. Manufacturers with lower numbers are displayed first.</p>
+                        </div>
+                        
+                        <div class="flex items-center space-x-6">
+                            <div class="flex items-center">
+                                @Html.CheckBoxFor(m => m.IsActive, new { @class = "rounded border-gray-300 text-pink-600 focus:ring-pink-500 h-4 w-4" })
+                                <label for="IsActive" class="ml-2 block text-sm text-gray-700">Active</label>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                @Html.CheckBoxFor(m => m.IsLuxury, new { @class = "rounded border-gray-300 text-pink-600 focus:ring-pink-500 h-4 w-4" })
+                                <label for="IsLuxury" class="ml-2 block text-sm text-gray-700">Luxury Brand</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right column - Logo -->
+            <div class="space-y-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Logo</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="logoImage" class="block text-sm font-medium text-gray-700 mb-1">Brand Logo</label>
+                            <div class="mt-1 flex items-center">
+                                <div class="h-32 w-32 border-2 border-gray-300 border-dashed rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+                                    <img id="imagePreview" src="#" alt="Preview" class="h-full w-full object-cover hidden">
+                                    <span id="uploadIcon" class="text-gray-400">
+                                        <i class="fas fa-upload text-2xl"></i>
+                                    </span>
+                                </div>
+                                <input type="file" id="logoImage" name="logoImage" accept="image/*" 
+                                       class="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Recommended size: 400x200 pixels, transparent PNG format</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4 border-t">
+            <a href="@Url.Action("Manufacturers")" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                Save Manufacturer
+            </button>
+        </div>
+    }
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Image preview on upload
+        $('#logoImage').change(function() {
+            if (this.files && this.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#imagePreview').attr('src', e.target.result).removeClass('hidden');
+                    $('#uploadIcon').addClass('hidden');
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    });
+</script> 

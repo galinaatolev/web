@@ -1,0 +1,228 @@
+﻿@{
+    ViewBag.Title = "Admin Panel";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">Overview</h1>
+</div>
+
+<!-- Statistics -->
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mb-4">
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="stats-icon bg-primary">
+                        <i class="fas fa-shopping-bag text-white"></i>
+                    </div>
+                    <h5 class="card-title mb-0 ms-3">Orders</h5>
+                </div>
+                <h2 class="mb-0">@(ViewBag.OrdersCount ?? 0)</h2>
+                <p class="text-muted small mb-0">Total orders</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="stats-icon bg-success">
+                        <i class="fas fa-users text-white"></i>
+                    </div>
+                    <h5 class="card-title mb-0 ms-3">Users</h5>
+                </div>
+                <h2 class="mb-0">@(ViewBag.CustomersCount ?? 0)</h2>
+                <p class="text-muted small mb-0">Registered users</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="stats-icon bg-info">
+                        <i class="fas fa-box-open text-white"></i>
+                    </div>
+                    <h5 class="card-title mb-0 ms-3">Products</h5>
+                </div>
+                <h2 class="mb-0">@(ViewBag.ProductsCount ?? 0)</h2>
+                <p class="text-muted small mb-0">Available products</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="stats-icon bg-warning">
+                        <i class="fas fa-dollar-sign text-white"></i>
+                    </div>
+                    <h5 class="card-title mb-0 ms-3">Revenue</h5>
+                </div>
+                <h2 class="mb-0">@((ViewBag.TotalRevenue ?? 0).ToString("N0")) MDL</h2>
+                <p class="text-muted small mb-0">Total revenue</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0">Recent Orders</h5>
+                <a href="@Url.Action("Orders", "Admin")" class="text-decoration-none small">View all</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (ViewBag.RecentOrders != null && ((List<BeautyMoldova.Domain.Models.Purchase>)ViewBag.RecentOrders).Any())
+                            {
+                                foreach (var order in (List<BeautyMoldova.Domain.Models.Purchase>)ViewBag.RecentOrders)
+                                {
+                                    <tr>
+                                        <td>#@order.Id</td>
+                                        <td>@order.Customer.FirstName @order.Customer.LastName</td>
+                                        <td>@order.PurchaseDate.ToString("dd.MM.yyyy")</td>
+                                        <td>@order.TotalAmount.ToString("N0") MDL</td>
+                                        <td>
+                                            @if (order.Status == "Completed")
+                                            {
+                                                <span class="badge bg-success">Completed</span>
+                                            }
+                                            else if (order.Status == "Processing")
+                                            {
+                                                <span class="badge bg-primary">Processing</span>
+                                            }
+                                            else if (order.Status == "Shipped")
+                                            {
+                                                <span class="badge bg-info">Shipped</span>
+                                            }
+                                            else if (order.Status == "Cancelled")
+                                            {
+                                                <span class="badge bg-danger">Cancelled</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">@order.Status</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <a href="@Url.Action("OrderDetails", "Admin", new { id = order.Id })" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-3">No order data available</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Users and Activities -->
+<div class="row">
+    <!-- Recent Users -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0">New Users</h5>
+                <a href="@Url.Action("Customers", "Admin")" class="text-decoration-none small">View all</a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    @if (ViewBag.NewCustomers != null && ((List<BeautyMoldova.Domain.Models.Customer>)ViewBag.NewCustomers).Any())
+                    {
+                        foreach (var customer in (List<BeautyMoldova.Domain.Models.Customer>)ViewBag.NewCustomers)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@customer.FirstName @customer.LastName</strong>
+                                    <small class="d-block text-muted">@customer.Email</small>
+                                </div>
+                                <span class="text-muted small">@customer.RegistrationDate.ToString("dd.MM.yyyy")</span>
+                            </li>
+                        }
+                    }
+                    else
+                    {
+                        <li class="list-group-item text-center py-3">No new users</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<style>
+    .stats-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .activity-stream {
+        padding-left: 35px;
+        position: relative;
+    }
+    
+    .activity-stream::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 15px;
+        height: 100%;
+        width: 2px;
+        background: #e9ecef;
+    }
+    
+    .activity-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    
+    .activity-item:last-child {
+        padding-bottom: 0;
+    }
+    
+    .activity-icon {
+        position: absolute;
+        left: -35px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+    }
+</style> 

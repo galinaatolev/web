@@ -1,0 +1,194 @@
+@model IEnumerable<BeautyMoldova.Domain.Models.Manufacturer>
+@{
+    ViewBag.Title = "Manufacturer Management";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0">Manufacturer Management</h1>
+        <a href="@Url.Action("CreateManufacturer")" class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center w-full md:w-auto">
+            <i class="fas fa-plus mr-2"></i> Add New Manufacturer
+        </a>
+    </div>
+    
+    <!-- Search Filters -->
+    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+        @using (Html.BeginForm("Manufacturers", "Admin", FormMethod.Get, new { @class = "space-y-4" }))
+        {
+            <div class="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0">
+                <div class="flex-1">
+                    <label for="searchString" class="block text-sm font-medium text-gray-700 mb-1">Search by name or description</label>
+                    <input type="text" name="searchString" id="searchString" value="@ViewBag.SearchString" 
+                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50" 
+                           placeholder="Enter search text...">
+                </div>
+                
+                <div class="w-full md:w-1/4">
+                    <label for="country" class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <select name="country" id="country" 
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50">
+                        <option value="">All Countries</option>
+                        @foreach (var country in ViewBag.Countries)
+                        {
+                            <option value="@country" @(ViewBag.SelectedCountry == country ? "selected" : "")>@country</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="w-full md:w-1/4">
+                    <label for="isLuxury" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select name="isLuxury" id="isLuxury" 
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring focus:ring-pink-200 focus:ring-opacity-50">
+                        <option value="">All Types</option>
+                        <option value="true" @(ViewBag.IsLuxury == true ? "selected" : "")>Luxury</option>
+                        <option value="false" @(ViewBag.IsLuxury == false ? "selected" : "")>Regular</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <button type="submit" class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                        <i class="fas fa-search mr-1"></i> Search
+                    </button>
+                    <a href="@Url.Action("Manufacturers")" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md font-medium transition-colors ml-2">
+                        Reset
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+    
+    <!-- Manufacturers Table -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logo</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Products</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sort Order</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @if (Model.Any())
+                {
+                    foreach (var manufacturer in Model)
+                    {
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="h-12 w-12 rounded-md overflow-hidden bg-gray-100">
+                                    @if (!string.IsNullOrEmpty(manufacturer.Logo))
+                                    {
+                                        <img src="~/Content/images/@manufacturer.Logo" alt="@manufacturer.Name" class="h-full w-full object-contain">
+                                    }
+                                    else
+                                    {
+                                        <div class="h-full w-full flex items-center justify-center text-gray-400">
+                                            <i class="fas fa-industry"></i>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900">@manufacturer.Name</div>
+                                @if (!string.IsNullOrEmpty(manufacturer.Website))
+                                {
+                                    <a href="@manufacturer.Website" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 mt-1 inline-flex items-center">
+                                        <i class="fas fa-external-link-alt mr-1"></i> @manufacturer.Website
+                                    </a>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                @manufacturer.Country
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                @(manufacturer.Products?.Count ?? 0)
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if (manufacturer.IsLuxury)
+                                {
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Luxury
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        Regular
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                @manufacturer.SortOrder
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if (manufacturer.IsActive)
+                                {
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Inactive
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <a href="@Url.Action("EditManufacturer", new { id = manufacturer.Id })" 
+                                       class="text-blue-600 hover:text-blue-900 transition-colors" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="@Url.Action("DeleteManufacturer", new { id = manufacturer.Id })" 
+                                       class="text-red-600 hover:text-red-900 transition-colors" title="Delete">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                    <a href="@Url.Action("Index", "Catalog", new { manufacturerId = manufacturer.Id })" target="_blank" 
+                                       class="text-gray-600 hover:text-gray-900 transition-colors" title="View on site">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="px-6 py-10 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <i class="fas fa-industry text-4xl mb-3 text-gray-300"></i>
+                                <p class="text-lg font-medium">No manufacturers available</p>
+                                <p class="text-sm mt-1">No manufacturers found or don't match search criteria</p>
+                                <a href="@Url.Action("CreateManufacturer")" class="mt-4 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                                    <i class="fas fa-plus mr-2"></i> Add new manufacturer
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Row highlighting on hover
+        $('table tbody tr').hover(
+            function() { $(this).addClass('bg-gray-50'); },
+            function() { $(this).removeClass('bg-gray-50'); }
+        );
+        
+        // Select inputs initialization
+        $('#country, #isLuxury').change(function() {
+            $(this).closest('form').submit();
+        });
+    });
+</script> 

@@ -1,0 +1,146 @@
+@model BeautyMoldova.Domain.Models.Promotion
+
+@{
+    ViewBag.Title = Model.Title;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex items-center mb-6">
+            <a href="@Url.Action("Index", "Promotion")" class="text-gray-500 hover:text-gray-700 mr-3">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">@Model.Title</h1>
+        </div>
+        
+        <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+            {
+                <div class="relative">
+                    <img src="~/Content/images/@Model.ImageUrl" alt="@Model.Title" class="w-full h-64 md:h-96 object-cover">
+                    
+                    <!-- Время до окончания акции -->
+                    @if (Model.EndDate > DateTime.Now)
+                    {
+                        var timeLeft = Model.EndDate - DateTime.Now;
+                        <div class="absolute bottom-0 right-0 bg-black bg-opacity-70 text-white px-4 py-2 m-4 rounded-lg">
+                            <div class="text-sm font-medium mb-1">До конца акции:</div>
+                            <div class="font-bold">
+                                @(timeLeft.Days > 0 ? $"{timeLeft.Days} дн. " : "")
+                                @(timeLeft.Hours > 0 ? $"{timeLeft.Hours} ч. " : "")
+                                @(timeLeft.Minutes > 0 ? $"{timeLeft.Minutes} мин." : "")
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            
+            <div class="p-6">
+                <!-- Информация об акции -->
+                <div class="mb-6">
+                    <div class="flex items-center text-sm text-gray-500 mb-4">
+                        <div class="flex items-center mr-4">
+                            <i class="far fa-calendar-alt mr-1"></i>
+                            с @Model.StartDate.ToString("dd.MM.yyyy") по @Model.EndDate.ToString("dd.MM.yyyy")
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.PromoCode))
+                        {
+                            <div class="flex items-center">
+                                <i class="fas fa-tag mr-1"></i>
+                                Промокод: <span class="font-semibold ml-1">@Model.PromoCode</span>
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="prose max-w-none">
+                        @Html.Raw(Model.Description)
+                    </div>
+                </div>
+                
+                <!-- Условия акции -->
+                @if (!string.IsNullOrEmpty(Model.Terms))
+                {
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3">Условия акции</h3>
+                        <div class="prose max-w-none text-gray-700">
+                            @Html.Raw(Model.Terms)
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        
+        <!-- Товары, участвующие в акции -->
+        @if (Model.PromotionProducts != null && Model.PromotionProducts.Any())
+        {
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4">Товары, участвующие в акции</h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    @foreach (var promotionProduct in Model.PromotionProducts)
+                    {
+                        var product = promotionProduct.Product;
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                            <a href="@Url.Action("ProductDetails", "Catalog", new { id = product.Id })" class="block">
+                                <div class="relative h-48">
+                                    @if (!string.IsNullOrEmpty(product.MainImage))
+                                    {
+                                        <img src="~/Content/images/@product.MainImage" alt="@product.Name" class="w-full h-full object-cover">
+                                    }
+                                    else
+                                    {
+                                        <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                                            <i class="fas fa-image text-gray-400 text-4xl"></i>
+                                        </div>
+                                    }
+                                    
+                                    @if (product.DiscountPrice.HasValue && product.DiscountPrice < product.Price)
+                                    {
+                                        var discountPercent = Math.Round((1 - (product.DiscountPrice.Value / product.Price)) * 100);
+                                        <div class="absolute top-0 right-0 bg-pink-500 text-white px-2 py-1 m-2 rounded-md text-xs font-bold">
+                                            -@discountPercent%
+                                        </div>
+                                    }
+                                </div>
+                                
+                                <div class="p-4">
+                                    <h3 class="text-gray-800 font-medium text-md mb-1 line-clamp-2 h-12">@product.Name</h3>
+                                    <p class="text-gray-500 text-sm mb-2">@(product.Manufacturer?.Name ?? "")</p>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            @if (product.DiscountPrice.HasValue && product.DiscountPrice < product.Price)
+                                            {
+                                                <div class="flex items-center">
+                                                    <span class="text-pink-600 font-bold">@product.DiscountPrice.Value MDL</span>
+                                                    <span class="text-gray-400 line-through ml-2 text-sm">@product.Price MDL</span>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-gray-800 font-bold">@product.Price MDL</span>
+                                            }
+                                        </div>
+                                        
+                                        <button type="button" 
+                                                onclick="addToCart({ id: @product.Id, name: '@product.Name.Replace("'", "\'")', price: @(product.DiscountPrice ?? product.Price), qty: 1, image: '@product.MainImage' })" 
+                                                class="text-gray-700 hover:text-pink-500 transition-colors">
+                                            <i class="fas fa-shopping-cart"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        
+        <div class="text-center">
+            <a href="@Url.Action("Index", "Promotion")" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition-colors inline-block">
+                Ко всем акциям
+            </a>
+        </div>
+    </div>
+</div> 
