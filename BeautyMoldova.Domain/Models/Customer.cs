@@ -16,6 +16,7 @@ namespace BeautyMoldova.Domain.Models
         public string AccessLevel { get; set; }
         public DateTime RegistrationDate { get; set; }
         public DateTime? LastLoginDate { get; set; }
+        public DateTime? DateOfBirth { get; set; }
         public bool IsActive { get; set; }
         public string ShippingAddress { get; set; }
         public string BillingAddress { get; set; }

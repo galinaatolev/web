@@ -1,231 +1,167 @@
 using System;
-using System.Data.Entity;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Mvc;
-using BeautyMoldova.Database;
+using BeautyMoldova.Application.Interfaces;
+using BeautyMoldova.Application.BusinessLogic;
 using BeautyMoldova.Domain.Models;
 
 namespace BeautyMoldova.Controllers
 {
     public class CatalogController : Controller
     {
-        private readonly ShopDataContext _db;
+        // ✅ ПРАВИЛЬНО - используем Business Logic вместо прямого контекста
+        private readonly IProductBL _productBL;
+        private readonly ICategoryBL _categoryBL;
 
         public CatalogController()
         {
-            _db = new ShopDataContext();
+            _productBL = new ProductBL();
+            _categoryBL = new CategoryBL();
         }
 
         // Страница каталога продуктов с фильтрацией и пагинацией
-        public async Task<ActionResult> Index(int? categoryId = null, int? manufacturerId = null, string sortOrder = null, decimal? minPrice = null, decimal? maxPrice = null, string skinType = null, int page = 1)
+        public ActionResult Index(int? categoryId = null, int? manufacturerId = null, string sortOrder = null, decimal? minPrice = null, decimal? maxPrice = null, string skinType = null, int page = 1)
         {
             ViewBag.Title = "Каталог продуктов";
             
-            var productsQuery = _db.Products.Where(p => p.IsAvailable).AsQueryable();
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var products = _productBL.GetAllProducts().Where(p => p.IsAvailable);
             
             // Применяем фильтры
             if (categoryId.HasValue)
             {
-                productsQuery = productsQuery.Where(p => p.CategoryId == categoryId.Value);
-                var category = await _db.Categories.FindAsync(categoryId.Value);
+                products = products.Where(p => p.CategoryId == categoryId.Value);
+                var category = _categoryBL.GetCategoryById(categoryId.Value);
                 ViewBag.CategoryName = category?.Name;
             }
             
             if (manufacturerId.HasValue)
             {
-                productsQuery = productsQuery.Where(p => p.ManufacturerId == manufacturerId.Value);
-                var manufacturer = await _db.Manufacturers.FindAsync(manufacturerId.Value);
-                ViewBag.ManufacturerName = manufacturer?.Name;
+                products = products.Where(p => p.ManufacturerId == manufacturerId.Value);
             }
             
             if (minPrice.HasValue)
             {
-                productsQuery = productsQuery.Where(p => p.DiscountPrice.HasValue 
+                products = products.Where(p => p.DiscountPrice.HasValue 
                     ? p.DiscountPrice >= minPrice.Value 
                     : p.Price >= minPrice.Value);
             }
             
             if (maxPrice.HasValue)
             {
-                productsQuery = productsQuery.Where(p => p.DiscountPrice.HasValue 
+                products = products.Where(p => p.DiscountPrice.HasValue 
                     ? p.DiscountPrice <= maxPrice.Value 
                     : p.Price <= maxPrice.Value);
             }
             
             if (!string.IsNullOrEmpty(skinType))
             {
-                productsQuery = productsQuery.Where(p => p.SkinType == skinType);
+                products = products.Where(p => p.SkinType == skinType);
             }
             
             // Сортировка
             switch (sortOrder)
             {
-                case "price_asc":
-                    productsQuery = productsQuery.OrderBy(p => p.DiscountPrice ?? p.Price);
+                case "name_desc":
+                    products = products.OrderByDescending(p => p.Name);
+                    break;
+                case "price":
+                    products = products.OrderBy(p => p.DiscountPrice ?? p.Price);
                     break;
                 case "price_desc":
-                    productsQuery = productsQuery.OrderByDescending(p => p.DiscountPrice ?? p.Price);
+                    products = products.OrderByDescending(p => p.DiscountPrice ?? p.Price);
                     break;
-                case "name_asc":
-                    productsQuery = productsQuery.OrderBy(p => p.Name);
-                    break;
-                case "name_desc":
-                    productsQuery = productsQuery.OrderByDescending(p => p.Name);
-                    break;
-                case "new":
-                    productsQuery = productsQuery.OrderByDescending(p => p.AddedDate);
-                    break;
-                case "popular":
-                    productsQuery = productsQuery.OrderByDescending(p => p.ViewCount);
+                case "newest":
+                    products = products.OrderByDescending(p => p.AddedDate);
                     break;
                 default:
-                    productsQuery = productsQuery.OrderByDescending(p => p.IsFeatured).ThenByDescending(p => p.AddedDate);
+                    products = products.OrderBy(p => p.Name);
                     break;
             }
             
             // Пагинация
-            int pageSize = 12;
-            int totalItems = await productsQuery.CountAsync();
-            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+            const int pageSize = 12;
+            var totalProducts = products.Count();
+            var pagedProducts = products.Skip((page - 1) * pageSize).Take(pageSize).ToList();
             
-            if (page < 1) page = 1;
-            if (page > totalPages && totalPages > 0) page = totalPages;
+            // Данные для фильтров
+            ViewBag.Categories = _categoryBL.GetAllCategories().Where(c => c.IsActive);
+            ViewBag.SkinTypes = new[] { "Сухая", "Жирная", "Комбинированная", "Нормальная", "Чувствительная" };
             
-            var products = await productsQuery
-                .Include(p => p.Manufacturer)
-                .Include(p => p.Category)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-            
-            // Подготовка данных для фильтров
-            ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.DisplayOrder).ToListAsync();
-            ViewBag.Manufacturers = await _db.Manufacturers.Where(m => m.IsActive).OrderBy(m => m.Name).ToListAsync();
-            ViewBag.SkinTypes = await _db.Products.Where(p => !string.IsNullOrEmpty(p.SkinType))
-                .Select(p => p.SkinType).Distinct().ToListAsync();
-            
+            // Параметры пагинации
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
-            ViewBag.TotalItems = totalItems;
-            ViewBag.SortOrder = sortOrder;
-            ViewBag.CategoryId = categoryId;
-            ViewBag.ManufacturerId = manufacturerId;
-            ViewBag.MinPrice = minPrice;
-            ViewBag.MaxPrice = maxPrice;
-            ViewBag.SkinType = skinType;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            ViewBag.TotalProducts = totalProducts;
             
-            return View(products);
+            // Текущие фильтры
+            ViewBag.CurrentCategoryId = categoryId;
+            ViewBag.CurrentManufacturerId = manufacturerId;
+            ViewBag.CurrentSortOrder = sortOrder;
+            ViewBag.CurrentMinPrice = minPrice;
+            ViewBag.CurrentMaxPrice = maxPrice;
+            ViewBag.CurrentSkinType = skinType;
+            
+            return View(pagedProducts);
         }
         
-        // Страница детальной информации о продукте
-        public async Task<ActionResult> ProductDetails(int id)
+        // Детальная страница продукта
+        public ActionResult ProductDetails(int id)
         {
-            var product = await _db.Products
-                .Include(p => p.Manufacturer)
-                .Include(p => p.Category)
-                .Include(p => p.Reviews)
-                .Include(p => p.AdditionalImages)
-                .Include(p => p.ProductTags.Select(pt => pt.Tag))
-                .FirstOrDefaultAsync(p => p.Id == id && p.IsAvailable);
-            
-            if (product == null)
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var product = _productBL.GetProductById(id);
+            if (product == null || !product.IsAvailable)
             {
                 return HttpNotFound();
             }
             
             // Увеличиваем счетчик просмотров
-            product.ViewCount++;
-            await _db.SaveChangesAsync();
+            _productBL.IncrementViewCount(id);
             
-            // Получаем похожие продукты
-            var relatedProducts = await _db.Products
-                .Where(p => p.CategoryId == product.CategoryId && p.Id != product.Id && p.IsAvailable)
-                .OrderByDescending(p => p.ViewCount)
-                .Take(4)
-                .ToListAsync();
+            // Получаем похожие товары из той же категории
+            var relatedProducts = _productBL.GetProductsByCategory(product.CategoryId)
+                                           .Where(p => p.Id != id && p.IsAvailable)
+                                           .Take(4)
+                                           .ToList();
             
             ViewBag.RelatedProducts = relatedProducts;
-            
-            // Проверяем, есть ли товар в вишлисте текущего пользователя
-            if (User.Identity.IsAuthenticated)
-            {
-                var customerUsername = User.Identity.Name;
-                var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Username == customerUsername);
-                if (customer != null)
-                {
-                    ViewBag.IsInWishlist = await _db.WishlistItems.AnyAsync(w => w.CustomerId == customer.Id && w.ProductId == id);
-                }
-            }
             
             return View(product);
         }
         
-        // Страница категорий
-        public async Task<ActionResult> Categories()
+        // Поиск продуктов
+        public ActionResult Search(string q, int page = 1)
         {
-            var categories = await _db.Categories
-                .Where(c => c.IsActive && c.ParentCategoryId == null)
-                .Include(c => c.ChildCategories)
-                .OrderBy(c => c.DisplayOrder)
-                .ToListAsync();
+            ViewBag.Title = "Результаты поиска";
+            ViewBag.SearchQuery = q;
             
-            return View(categories);
-        }
-        
-        // Страница товаров категории
-        public async Task<ActionResult> Category(int id, int page = 1)
-        {
-            var category = await _db.Categories
-                .Include(c => c.ChildCategories)
-                .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
-            
-            if (category == null)
+            if (string.IsNullOrEmpty(q))
             {
-                return HttpNotFound();
+                return View("Index", new List<Product>());
             }
             
-            var categoryIds = new[] { id };
-            if (category.ChildCategories != null && category.ChildCategories.Any())
-            {
-                categoryIds = categoryIds.Concat(category.ChildCategories.Select(c => c.Id)).ToArray();
-            }
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var products = _productBL.SearchProducts(q);
             
-            return RedirectToAction("Index", new { categoryId = id, page });
+            // Пагинация
+            const int pageSize = 12;
+            var totalProducts = products.Count;
+            var pagedProducts = products.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            ViewBag.TotalProducts = totalProducts;
+            
+            return View("Index", pagedProducts);
         }
-        
-        // Страница производителей
-        public async Task<ActionResult> Manufacturers()
-        {
-            var manufacturers = await _db.Manufacturers
-                .Where(m => m.IsActive)
-                .OrderByDescending(m => m.IsLuxury)
-                .ThenBy(m => m.SortOrder)
-                .ThenBy(m => m.Name)
-                .ToListAsync();
-            
-            return View(manufacturers);
-        }
-        
-        // Страница товаров производителя
-        public async Task<ActionResult> Manufacturer(int id, int page = 1)
-        {
-            var manufacturer = await _db.Manufacturers
-                .FirstOrDefaultAsync(m => m.Id == id && m.IsActive);
-            
-            if (manufacturer == null)
-            {
-                return HttpNotFound();
-            }
-            
-            return RedirectToAction("Index", new { manufacturerId = id, page });
-        }
-        
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _db.Dispose();
+                (_productBL as IDisposable)?.Dispose();
+                (_categoryBL as IDisposable)?.Dispose();
             }
             base.Dispose(disposing);
         }

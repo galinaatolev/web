@@ -46,8 +46,17 @@
         <Reference Include="System.Xml" />
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="BaseApi.cs" />
         <Compile Include="IdentityManager.cs" />
         <Compile Include="Interfaces\SomeInterface.cs" />
+        <Compile Include="Interfaces\IProductBL.cs" />
+        <Compile Include="Interfaces\ICategoryBL.cs" />
+        <Compile Include="Interfaces\ICustomerBL.cs" />
+        <Compile Include="Interfaces\IPurchaseBL.cs" />
+        <Compile Include="BusinessLogic\ProductBL.cs" />
+        <Compile Include="BusinessLogic\CategoryBL.cs" />
+        <Compile Include="BusinessLogic\CustomerBL.cs" />
+        <Compile Include="BusinessLogic\PurchaseBL.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
     <ItemGroup>
@@ -63,6 +72,7 @@
     <ItemGroup>
       <None Include="App.config" />
       <None Include="packages.config" />
+      <None Include="README_Architecture_Fix.md" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

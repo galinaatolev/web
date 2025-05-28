@@ -1,9 +1,9 @@
 using System;
-using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Mvc;
-using BeautyMoldova.Database;
+using BeautyMoldova.Application.Interfaces;
+using BeautyMoldova.Application.BusinessLogic;
 using BeautyMoldova.Domain.Models;
 
 namespace BeautyMoldova.Controllers
@@ -11,19 +11,22 @@ namespace BeautyMoldova.Controllers
     [Authorize]
     public class CustomerController : Controller
     {
-        private readonly ShopDataContext _db;
+        // ✅ ПРАВИЛЬНО - используем Business Logic вместо прямого контекста
+        private readonly ICustomerBL _customerBL;
+        private readonly IPurchaseBL _purchaseBL;
 
         public CustomerController()
         {
-            _db = new ShopDataContext();
+            _customerBL = new CustomerBL();
+            _purchaseBL = new PurchaseBL();
         }
 
         // Дашборд личного кабинета
-        public async Task<ActionResult> Dashboard()
+        public ActionResult Dashboard()
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
@@ -31,179 +34,169 @@ namespace BeautyMoldova.Controllers
             }
             
             // Получение последних заказов
-            var recentPurchases = await _db.Purchases
-                .Where(p => p.CustomerId == customer.Id)
-                .OrderByDescending(p => p.PurchaseDate)
-                .Take(5)
-                .ToListAsync();
+            var recentPurchases = _purchaseBL.GetPurchasesByCustomer(customer.Id).Take(5).ToList();
             
             // Получение товаров из избранного
-            var wishlistItems = await _db.WishlistItems
-                .Where(w => w.CustomerId == customer.Id)
-                .Include(w => w.Product)
-                .OrderByDescending(w => w.AddedDate)
-                .Take(4)
-                .ToListAsync();
-            
-            // Недавно просмотренные товары (можно сделать через куки или другой механизм)
-            // Это заглушка для примера
-            var recentlyViewedProducts = await _db.Products
-                .Where(p => p.IsAvailable)
-                .OrderByDescending(p => p.ViewCount)
-                .Take(4)
-                .ToListAsync();
+            var wishlistItems = _customerBL.GetCustomerWishlist(customer.Id).Take(4).ToList();
             
             ViewBag.Customer = customer;
             ViewBag.RecentPurchases = recentPurchases;
             ViewBag.WishlistItems = wishlistItems;
-            ViewBag.RecentlyViewedProducts = recentlyViewedProducts;
+            ViewBag.TotalOrders = _purchaseBL.GetPurchasesByCustomer(customer.Id).Count;
+            ViewBag.UnreadNotifications = _customerBL.GetUnreadNotifications(customer.Id).Count;
             
             return View();
         }
         
-        // Список всех заказов пользователя
-        public async Task<ActionResult> Purchases()
+        // Список заказов клиента
+        public ActionResult Orders(int page = 1)
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return RedirectToAction("Enter", "Profile");
             }
             
-            var purchases = await _db.Purchases
-                .Where(p => p.CustomerId == customer.Id)
-                .OrderByDescending(p => p.PurchaseDate)
-                .ToListAsync();
+            var orders = _purchaseBL.GetPurchasesByCustomer(customer.Id);
             
-            return View(purchases);
+            // Пагинация
+            const int pageSize = 10;
+            var totalOrders = orders.Count;
+            var pagedOrders = orders.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalOrders / pageSize);
+            ViewBag.TotalOrders = totalOrders;
+            
+            return View(pagedOrders);
         }
         
-        // Детали конкретного заказа
-        public async Task<ActionResult> PurchaseDetails(int id)
+        // Детали заказа
+        public ActionResult OrderDetails(int id)
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return RedirectToAction("Enter", "Profile");
             }
             
-            var purchase = await _db.Purchases
-                .Include(p => p.PurchaseItems.Select(pi => pi.Product))
-                .FirstOrDefaultAsync(p => p.Id == id && p.CustomerId == customer.Id);
+            var order = _purchaseBL.GetPurchaseById(id);
             
-            if (purchase == null)
+            if (order == null || order.CustomerId != customer.Id)
             {
                 return HttpNotFound();
             }
             
-            return View(purchase);
+            return View(order);
         }
         
-        // Список избранных товаров
-        public async Task<ActionResult> Wishlist()
+        // Список избранного
+        public ActionResult Wishlist()
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return RedirectToAction("Enter", "Profile");
             }
             
-            var wishlistItems = await _db.WishlistItems
-                .Where(w => w.CustomerId == customer.Id)
-                .Include(w => w.Product.Manufacturer)
-                .OrderByDescending(w => w.AddedDate)
-                .ToListAsync();
+            var wishlistItems = _customerBL.GetCustomerWishlist(customer.Id);
             
             return View(wishlistItems);
         }
         
-        // Добавление товара в избранное (AJAX)
+        // Добавление в избранное
         [HttpPost]
-        public async Task<ActionResult> AddToWishlist(int productId)
+        public ActionResult AddToWishlist(int productId)
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return Json(new { success = false, message = "Пользователь не найден" });
             }
             
-            // Проверяем, есть ли товар в базе
-            var product = await _db.Products.FindAsync(productId);
-            if (product == null)
+            if (_customerBL.AddToWishlist(customer.Id, productId))
             {
-                return Json(new { success = false, message = "Товар не найден" });
+                return Json(new { success = true, message = "Товар добавлен в избранное" });
             }
-            
-            // Проверяем, не добавлен ли товар уже в избранное
-            var existingItem = await _db.WishlistItems
-                .FirstOrDefaultAsync(w => w.CustomerId == customer.Id && w.ProductId == productId);
-            
-            if (existingItem != null)
+            else
             {
-                return Json(new { success = true, message = "Товар уже в избранном" });
+                return Json(new { success = false, message = "Товар уже в избранном" });
             }
-            
-            // Добавляем товар в избранное
-            var wishlistItem = new WishlistItem
-            {
-                CustomerId = customer.Id,
-                ProductId = productId,
-                AddedDate = DateTime.Now
-            };
-            
-            _db.WishlistItems.Add(wishlistItem);
-            await _db.SaveChangesAsync();
-            
-            return Json(new { success = true, message = "Товар добавлен в избранное" });
         }
         
-        // Удаление товара из избранного (AJAX)
+        // Удаление из избранного
         [HttpPost]
-        public async Task<ActionResult> RemoveFromWishlist(int productId)
+        public ActionResult RemoveFromWishlist(int productId)
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return Json(new { success = false, message = "Пользователь не найден" });
             }
             
-            // Находим запись в избранном
-            var wishlistItem = await _db.WishlistItems
-                .FirstOrDefaultAsync(w => w.CustomerId == customer.Id && w.ProductId == productId);
-            
-            if (wishlistItem == null)
+            if (_customerBL.RemoveFromWishlist(customer.Id, productId))
             {
-                return Json(new { success = false, message = "Товар не найден в избранном" });
+                return Json(new { success = true, message = "Товар удален из избранного" });
+            }
+            else
+            {
+                return Json(new { success = false, message = "Ошибка при удалении" });
+            }
+        }
+        
+        // Уведомления
+        public ActionResult Notifications()
+        {
+            var username = User.Identity.Name;
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
+            
+            if (customer == null)
+            {
+                return RedirectToAction("Enter", "Profile");
             }
             
-            // Удаляем из избранного
-            _db.WishlistItems.Remove(wishlistItem);
-            await _db.SaveChangesAsync();
+            var notifications = _customerBL.GetCustomerNotifications(customer.Id);
             
-            return Json(new { success = true, message = "Товар удален из избранного" });
+            return View(notifications);
+        }
+        
+        // Отметить уведомление как прочитанное
+        [HttpPost]
+        public ActionResult MarkNotificationAsRead(int notificationId)
+        {
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            if (_customerBL.MarkNotificationAsRead(notificationId))
+            {
+                return Json(new { success = true });
+            }
+            else
+            {
+                return Json(new { success = false });
+            }
         }
         
         // Профиль пользователя
-        public async Task<ActionResult> Profile()
+        public ActionResult Profile()
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
@@ -213,59 +206,47 @@ namespace BeautyMoldova.Controllers
             return View(customer);
         }
         
-        // Обновление профиля пользователя
+        // Редактирование профиля
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> UpdateProfile(Customer model)
+        public ActionResult UpdateProfile(Customer model)
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return RedirectToAction("Enter", "Profile");
             }
             
-            // Обновляем только допустимые поля
+            // Обновляем только разрешенные поля
             customer.FirstName = model.FirstName;
             customer.LastName = model.LastName;
+            customer.Email = model.Email;
             customer.PhoneNumber = model.PhoneNumber;
+            customer.DateOfBirth = model.DateOfBirth;
             customer.ShippingAddress = model.ShippingAddress;
             customer.BillingAddress = model.BillingAddress;
             
-            await _db.SaveChangesAsync();
-            
-            TempData["SuccessMessage"] = "Профиль успешно обновлен";
-            return RedirectToAction("Profile");
-        }
-        
-        // Отзывы пользователя
-        public async Task<ActionResult> Reviews()
-        {
-            var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
-            
-            if (customer == null)
+            if (_customerBL.UpdateCustomer(customer))
             {
-                return RedirectToAction("Enter", "Profile");
+                TempData["SuccessMessage"] = "Профиль успешно обновлен";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Ошибка при обновлении профиля";
             }
             
-            var reviews = await _db.Reviews
-                .Where(r => r.CustomerId == customer.Id)
-                .Include(r => r.Product)
-                .OrderByDescending(r => r.CreatedDate)
-                .ToListAsync();
-            
-            return View(reviews);
+            return RedirectToAction("Profile");
         }
-        
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _db.Dispose();
+                (_customerBL as IDisposable)?.Dispose();
+                (_purchaseBL as IDisposable)?.Dispose();
             }
             base.Dispose(disposing);
         }

@@ -2,15 +2,24 @@
 using System.Linq;
 using System.Net;
 using System.Web.Mvc;
-using System.Data.Entity;
-using BeautyMoldova.Database;
+using BeautyMoldova.Application.Interfaces;
+using BeautyMoldova.Application.BusinessLogic;
 using BeautyMoldova.Domain.Models;
 
 namespace CosmeticShop.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ShopDataContext _dataStore = new ShopDataContext();
+        private readonly IProductBL _productBL;
+        private readonly ICustomerBL _customerBL;
+        private readonly IPurchaseBL _purchaseBL;
+
+        public HomeController()
+        {
+            _productBL = new ProductBL();
+            _customerBL = new CustomerBL();
+            _purchaseBL = new PurchaseBL();
+        }
         
         public ActionResult Index()
         {
@@ -31,27 +40,20 @@ namespace CosmeticShop.Controllers
 
         public ActionResult Products()
         {
-            var products = _dataStore.Products
-                .Include(p => p.Manufacturer)
-                .Include(p => p.Category)
-                .Include(p => p.Reviews)
-                .ToList();
+            var products = _productBL.GetAllProducts();
             return View(products);
         }
         
         public ActionResult ProductDetails(int id)
         {
-            var product = _dataStore.Products
-                .Include(p => p.Manufacturer)
-                .Include(p => p.Category)
-                .Include(p => p.Reviews)
-                .Include(p => p.AdditionalImages)
-                .FirstOrDefault(p => p.Id == id);
+            var product = _productBL.GetProductById(id);
                 
             if (product == null)
             {
                 return HttpNotFound();
             }
+            
+            _productBL.IncrementViewCount(id);
             
             return View(product);
         }
@@ -60,14 +62,12 @@ namespace CosmeticShop.Controllers
         [Authorize]
         public ActionResult AddToCart(int productId, int quantity)
         {
-            var product = _dataStore.Products.Find(productId);
+            var product = _productBL.GetProductById(productId);
             if (product == null)
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest, "Produsul nu există");
             }
             
-            // Здесь обычно была бы корзина в сессии или базе данных
-            // Возвращаем заглушку для примера
             return Json(new { success = true, message = "Produsul a fost adăugat în coș" });
         }
         
@@ -80,7 +80,7 @@ namespace CosmeticShop.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest, "Date comandă invalide");
             }
 
-            var customer = _dataStore.Customers.FirstOrDefault(c => c.Username == User.Identity.Name);
+            var customer = _customerBL.GetCustomerByUsername(User.Identity.Name);
             if (customer == null)
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest, "Utilizator neautorizat");
@@ -91,10 +91,23 @@ namespace CosmeticShop.Controllers
             purchase.Status = "Pending";
             purchase.OrderNumber = "ORD-" + DateTime.Now.ToString("yyyyMMddHHmmss");
             
-            _dataStore.Purchases.Add(purchase);
-            _dataStore.SaveChanges();
+            if (_purchaseBL.CreatePurchase(purchase))
+            {
+                return Json(new { success = true, orderId = purchase.Id });
+            }
+            
+            return new HttpStatusCodeResult(HttpStatusCode.InternalServerError, "Eroare la crearea comenzii");
+        }
 
-            return Json(new { success = true, orderId = purchase.Id });
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                (_productBL as IDisposable)?.Dispose();
+                (_customerBL as IDisposable)?.Dispose();
+                (_purchaseBL as IDisposable)?.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }

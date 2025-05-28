@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
-using BeautyMoldova.Database;
+using BeautyMoldova.Application.Interfaces;
+using BeautyMoldova.Application.BusinessLogic;
 using BeautyMoldova.Domain.Models;
 using Newtonsoft.Json;
 
@@ -13,16 +13,20 @@ namespace BeautyMoldova.Controllers
 {
     public class CartController : Controller
     {
-        private readonly ShopDataContext _db;
+        private readonly IProductBL _productBL;
+        private readonly ICustomerBL _customerBL;
+        private readonly IPurchaseBL _purchaseBL;
         private const string CartSessionKey = "CartItems";
 
         public CartController()
         {
-            _db = new ShopDataContext();
+            _productBL = new ProductBL();
+            _customerBL = new CustomerBL();
+            _purchaseBL = new PurchaseBL();
         }
         
         // Отображение страницы корзины
-        public async Task<ActionResult> Index()
+        public ActionResult Index()
         {
             var cartItems = GetCartItems();
             
@@ -32,10 +36,8 @@ namespace BeautyMoldova.Controllers
             }
             
             var productIds = cartItems.Select(i => i.ProductId).ToList();
-            var products = await _db.Products
-                .Include(p => p.Manufacturer)
-                .Where(p => productIds.Contains(p.Id))
-                .ToListAsync();
+            var allProducts = _productBL.GetAllProducts();
+            var products = allProducts.Where(p => productIds.Contains(p.Id)).ToList();
             
             var cartViewModels = new List<CartItemViewModel>();
             
@@ -48,12 +50,11 @@ namespace BeautyMoldova.Controllers
                     {
                         ProductId = product.Id,
                         Name = product.Name,
-                        Manufacturer = product.Manufacturer.Name,
                         Price = product.DiscountPrice ?? product.Price,
                         Quantity = item.Quantity,
                         ImageUrl = product.MainImage,
-                        StockQuantity = product.StockQuantity,
-                        SubTotal = (product.DiscountPrice ?? product.Price) * item.Quantity
+                        SubTotal = (product.DiscountPrice ?? product.Price) * item.Quantity,
+                        StockQuantity = product.StockQuantity
                     });
                 }
             }
@@ -63,22 +64,17 @@ namespace BeautyMoldova.Controllers
         
         // Добавление товара в корзину
         [HttpPost]
-        public async Task<ActionResult> AddToCart(int productId, int quantity = 1)
+        public ActionResult AddToCart(int productId, int quantity = 1)
         {
-            if (quantity <= 0)
-            {
-                quantity = 1;
-            }
-            
-            var product = await _db.Products.FindAsync(productId);
+            var product = _productBL.GetProductById(productId);
             if (product == null || !product.IsAvailable)
             {
-                return Json(new { success = false, message = "Product is not available." });
+                return Json(new { success = false, message = "Товар не найден или недоступен" });
             }
             
-            if (quantity > product.StockQuantity)
+            if (product.StockQuantity < quantity)
             {
-                return Json(new { success = false, message = $"Only {product.StockQuantity} items available." });
+                return Json(new { success = false, message = "Недостаточно товара на складе" });
             }
             
             var cartItems = GetCartItems();
@@ -87,18 +83,6 @@ namespace BeautyMoldova.Controllers
             if (existingItem != null)
             {
                 existingItem.Quantity += quantity;
-                
-                // Проверка на доступное количество
-                if (existingItem.Quantity > product.StockQuantity)
-                {
-                    existingItem.Quantity = product.StockQuantity;
-                    SaveCartItems(cartItems);
-                    return Json(new { 
-                        success = true, 
-                        message = $"Maximum available quantity reached ({product.StockQuantity} items).", 
-                        cartCount = GetCartCount() 
-                    });
-                }
             }
             else
             {
@@ -111,53 +95,48 @@ namespace BeautyMoldova.Controllers
             
             SaveCartItems(cartItems);
             
-            return Json(new { success = true, message = "Product added to cart.", cartCount = GetCartCount() });
+            return Json(new { 
+                success = true, 
+                message = "Товар добавлен в корзину",
+                cartCount = cartItems.Sum(i => i.Quantity)
+            });
         }
         
         // Обновление количества товара в корзине
         [HttpPost]
-        public async Task<ActionResult> UpdateQuantity(int productId, int quantity)
+        public ActionResult UpdateCartItem(int productId, int quantity)
         {
-            if (quantity <= 0)
-            {
-                return Json(new { success = false, message = "Quantity must be greater than 0." });
-            }
+            var cartItems = GetCartItems();
+            var item = cartItems.FirstOrDefault(i => i.ProductId == productId);
             
-            var product = await _db.Products.FindAsync(productId);
-            if (product == null || !product.IsAvailable)
+            if (item != null)
             {
-                return Json(new { success = false, message = "Product is not available." });
-            }
-            
-            if (quantity > product.StockQuantity)
-            {
+                if (quantity <= 0)
+                {
+                    cartItems.Remove(item);
+                }
+                else
+                {
+                    var product = _productBL.GetProductById(productId);
+                    if (product != null && product.StockQuantity >= quantity)
+                    {
+                        item.Quantity = quantity;
+                    }
+                    else
+                    {
+                        return Json(new { success = false, message = "Недостаточно товара на складе" });
+                    }
+                }
+                
+                SaveCartItems(cartItems);
+                
                 return Json(new { 
-                    success = false, 
-                    message = $"Only {product.StockQuantity} items available.",
-                    maxQuantity = product.StockQuantity
+                    success = true,
+                    cartCount = cartItems.Sum(i => i.Quantity)
                 });
             }
             
-            var cartItems = GetCartItems();
-            var existingItem = cartItems.FirstOrDefault(i => i.ProductId == productId);
-            
-            if (existingItem == null)
-            {
-                return Json(new { success = false, message = "Product not found in cart." });
-            }
-            
-            existingItem.Quantity = quantity;
-            SaveCartItems(cartItems);
-            
-            decimal subtotal = (product.DiscountPrice ?? product.Price) * quantity;
-            
-            return Json(new { 
-                success = true, 
-                message = "Quantity updated.", 
-                subtotal = subtotal, 
-                total = GetCartTotal(),
-                cartCount = GetCartCount()
-            });
+            return Json(new { success = false, message = "Товар не найден в корзине" });
         }
         
         // Удаление товара из корзины
@@ -165,15 +144,20 @@ namespace BeautyMoldova.Controllers
         public ActionResult RemoveFromCart(int productId)
         {
             var cartItems = GetCartItems();
-            var itemToRemove = cartItems.FirstOrDefault(i => i.ProductId == productId);
+            var item = cartItems.FirstOrDefault(i => i.ProductId == productId);
             
-            if (itemToRemove != null)
+            if (item != null)
             {
-                cartItems.Remove(itemToRemove);
+                cartItems.Remove(item);
                 SaveCartItems(cartItems);
+                
+                return Json(new { 
+                    success = true,
+                    cartCount = cartItems.Sum(i => i.Quantity)
+                });
             }
             
-            return Json(new { success = true, message = "Product removed from cart.", cartCount = GetCartCount(), total = GetCartTotal() });
+            return Json(new { success = false, message = "Товар не найден в корзине" });
         }
         
         // Очистка корзины
@@ -181,70 +165,19 @@ namespace BeautyMoldova.Controllers
         public ActionResult ClearCart()
         {
             Session[CartSessionKey] = null;
-            return Json(new { success = true, message = "Cart cleared." });
+            return Json(new { success = true });
         }
         
-        // Добавление нескольких товаров в корзину сразу
-        [HttpPost]
-        public async Task<ActionResult> AddToCartBulk(List<CartItemJS> cartItemsJS)
+        // Получение количества товаров в корзине
+        public ActionResult GetCartCount()
         {
-            if (cartItemsJS == null || !cartItemsJS.Any())
-            {
-                return Json(new { success = false, message = "No items to add to cart." });
-            }
-            
-            // Получаем список ID продуктов из JS корзины
-            var productIds = cartItemsJS.Select(i => i.id).ToList();
-            
-            // Загружаем информацию о продуктах из БД
-            var products = await _db.Products
-                .Where(p => productIds.Contains(p.Id))
-                .ToListAsync();
-            
-            // Проверяем наличие товаров
-            foreach (var item in cartItemsJS)
-            {
-                var product = products.FirstOrDefault(p => p.Id == item.id);
-                if (product == null || !product.IsAvailable)
-                {
-                    return Json(new { success = false, message = $"Product with ID {item.id} is not available." });
-                }
-                
-                if (item.qty > product.StockQuantity)
-                {
-                    return Json(new { 
-                        success = false, 
-                        message = $"Only {product.StockQuantity} items of {product.Name} are available."
-                    });
-                }
-            }
-            
-            // Создаем новую серверную корзину
-            var cartItems = new List<CartItem>();
-            
-            // Преобразовываем товары из JSON в формат серверной корзины
-            foreach (var item in cartItemsJS)
-            {
-                cartItems.Add(new CartItem
-                {
-                    ProductId = item.id,
-                    Quantity = item.qty
-                });
-            }
-            
-            // Сохраняем корзину в сессии
-            SaveCartItems(cartItems);
-            
-            return Json(new { 
-                success = true, 
-                message = "Cart items added successfully.", 
-                cartCount = GetCartCount() 
-            });
+            var cartItems = GetCartItems();
+            return Json(new { count = cartItems.Sum(i => i.Quantity) }, JsonRequestBehavior.AllowGet);
         }
         
         // Страница оформления заказа
         [Authorize]
-        public async Task<ActionResult> Checkout()
+        public ActionResult Checkout()
         {
             var cartItems = GetCartItems();
             if (cartItems.Count == 0)
@@ -252,30 +185,9 @@ namespace BeautyMoldova.Controllers
                 return RedirectToAction("Index");
             }
             
-            var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
-            
-            if (customer == null)
-            {
-                return RedirectToAction("Enter", "Profile");
-            }
-            
-            var checkoutViewModel = new CheckoutViewModel
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                Email = customer.Email,
-                PhoneNumber = customer.PhoneNumber,
-                ShippingAddress = customer.ShippingAddress,
-                BillingAddress = customer.BillingAddress
-            };
-            
             var productIds = cartItems.Select(i => i.ProductId).ToList();
-            var products = await _db.Products
-                .Include(p => p.Manufacturer)
-                .Where(p => productIds.Contains(p.Id))
-                .ToListAsync();
+            var allProducts = _productBL.GetAllProducts();
+            var products = allProducts.Where(p => productIds.Contains(p.Id)).ToList();
             
             var cartViewModels = new List<CartItemViewModel>();
             
@@ -288,11 +200,11 @@ namespace BeautyMoldova.Controllers
                     {
                         ProductId = product.Id,
                         Name = product.Name,
-                        Manufacturer = product.Manufacturer.Name,
                         Price = product.DiscountPrice ?? product.Price,
                         Quantity = item.Quantity,
                         ImageUrl = product.MainImage,
-                        SubTotal = (product.DiscountPrice ?? product.Price) * item.Quantity
+                        SubTotal = (product.DiscountPrice ?? product.Price) * item.Quantity,
+                        StockQuantity = product.StockQuantity
                     });
                 }
             }
@@ -300,23 +212,21 @@ namespace BeautyMoldova.Controllers
             ViewBag.CartItems = cartViewModels;
             ViewBag.CartTotal = cartViewModels.Sum(i => i.SubTotal);
             
-            return View(checkoutViewModel);
+            return View(new CheckoutViewModel());
         }
         
-        // Размещение заказа
+        // Обработка заказа
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> PlaceOrder(CheckoutViewModel model)
+        public ActionResult ProcessCheckout(CheckoutViewModel model)
         {
             if (!ModelState.IsValid)
             {
                 var cartItemsList = GetCartItems();
                 var productsIds = cartItemsList.Select(i => i.ProductId).ToList();
-                var productsItems = await _db.Products
-                    .Include(p => p.Manufacturer)
-                    .Where(p => productsIds.Contains(p.Id))
-                    .ToListAsync();
+                var allProducts = _productBL.GetAllProducts();
+                var productsItems = allProducts.Where(p => productsIds.Contains(p.Id)).ToList();
                 
                 var cartViewModels = new List<CartItemViewModel>();
                 
@@ -329,11 +239,11 @@ namespace BeautyMoldova.Controllers
                         {
                             ProductId = product.Id,
                             Name = product.Name,
-                            Manufacturer = product.Manufacturer.Name,
                             Price = product.DiscountPrice ?? product.Price,
                             Quantity = item.Quantity,
                             ImageUrl = product.MainImage,
-                            SubTotal = (product.DiscountPrice ?? product.Price) * item.Quantity
+                            SubTotal = (product.DiscountPrice ?? product.Price) * item.Quantity,
+                            StockQuantity = product.StockQuantity
                         });
                     }
                 }
@@ -351,195 +261,129 @@ namespace BeautyMoldova.Controllers
             }
             
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
-                return RedirectToAction("Enter", "Profile");
+                return RedirectToAction("Login", "Profile", new { returnUrl = Url.Action("Checkout") });
             }
             
-            // Проверяем наличие товаров
-            var productIds = cartItems.Select(i => i.ProductId).ToList();
-            var products = await _db.Products
-                .Where(p => productIds.Contains(p.Id))
-                .ToListAsync();
-            
-            foreach (var item in cartItems)
-            {
-                var product = products.FirstOrDefault(p => p.Id == item.ProductId);
-                if (product == null || !product.IsAvailable || product.StockQuantity < item.Quantity)
-                {
-                    TempData["ErrorMessage"] = "Some products are unavailable or their quantity has changed. Please check your cart.";
-                    return RedirectToAction("Index");
-                }
-            }
-            
-            // Создаем заказ
             var purchase = new Purchase
             {
                 CustomerId = customer.Id,
-                PurchaseDate = DateTime.Now,
+                OrderNumber = "ORD-" + DateTime.Now.ToString("yyyyMMddHHmmss"),
                 OrderDate = DateTime.Now,
-                ShippingAddress = model.ShippingAddress,
-                BillingAddress = model.BillingAddress,
+                PurchaseDate = DateTime.Now,
+                Status = "Pending",
                 PaymentMethod = model.PaymentMethod,
                 ShippingMethod = model.ShippingMethod,
-                Status = "Processing",
-                Notes = model.Notes,
+                ShippingAddress = model.ShippingAddress,
+                BillingAddress = model.BillingAddress,
+                CustomerNotes = model.Notes,
                 PurchaseItems = new List<PurchaseItem>()
             };
             
-            // Добавляем товары в заказ
             decimal totalAmount = 0;
+            var productIds = cartItems.Select(i => i.ProductId).ToList();
+            var allProductsForOrder = _productBL.GetAllProducts();
+            var productsForOrder = allProductsForOrder.Where(p => productIds.Contains(p.Id)).ToList();
             
-            foreach (var item in cartItems)
+            foreach (var cartItem in cartItems)
             {
-                var product = products.FirstOrDefault(p => p.Id == item.ProductId);
-                if (product != null)
+                var product = productsForOrder.FirstOrDefault(p => p.Id == cartItem.ProductId);
+                if (product != null && product.StockQuantity >= cartItem.Quantity)
                 {
                     var price = product.DiscountPrice ?? product.Price;
                     var purchaseItem = new PurchaseItem
                     {
                         ProductId = product.Id,
-                        Quantity = item.Quantity,
+                        Quantity = cartItem.Quantity,
                         UnitPrice = price,
-                        TotalPrice = price * item.Quantity
+                        TotalPrice = price * cartItem.Quantity
                     };
                     
-                    // Уменьшаем количество товара в наличии
-                    product.StockQuantity -= item.Quantity;
-                    
-                    totalAmount += purchaseItem.TotalPrice;
                     purchase.PurchaseItems.Add(purchaseItem);
+                    totalAmount += purchaseItem.TotalPrice;
+                    
+                    product.StockQuantity -= cartItem.Quantity;
+                    _productBL.UpdateProduct(product);
                 }
             }
             
             purchase.TotalAmount = totalAmount;
             
-            // Начисляем бонусные баллы (примерно 5% от суммы заказа)
-            int bonusPoints = (int)(totalAmount * 0.05m);
-            customer.LoyaltyPoints += bonusPoints;
-            
-            // Сохраняем изменения в базе данных
-            _db.Purchases.Add(purchase);
-            await _db.SaveChangesAsync();
-            
-            // Очищаем корзину
-            Session[CartSessionKey] = null;
-            
-            // Возвращаем пользователя на страницу с подтверждением заказа
-            TempData["SuccessMessage"] = "Your order has been successfully placed! Order number: " + purchase.Id;
-            return RedirectToAction("OrderConfirmation", new { id = purchase.Id });
+            if (_purchaseBL.CreatePurchase(purchase))
+            {
+                Session[CartSessionKey] = null;
+                
+                TempData["SuccessMessage"] = "Ваш заказ успешно оформлен!";
+                return RedirectToAction("OrderConfirmation", new { id = purchase.Id });
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Произошла ошибка при оформлении заказа";
+                return RedirectToAction("Checkout");
+            }
         }
         
-        // Страница подтверждения заказа
+        // Подтверждение заказа
         [Authorize]
-        public async Task<ActionResult> OrderConfirmation(int id)
+        public ActionResult OrderConfirmation(int id)
         {
-            var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
-            
-            if (customer == null)
-            {
-                return RedirectToAction("Enter", "Profile");
-            }
-            
-            var purchase = await _db.Purchases
-                .Include(p => p.PurchaseItems.Select(pi => pi.Product))
-                .FirstOrDefaultAsync(p => p.Id == id && p.CustomerId == customer.Id);
-            
+            var purchase = _purchaseBL.GetPurchaseById(id);
             if (purchase == null)
             {
                 return HttpNotFound();
             }
             
+            var customer = _customerBL.GetCustomerByUsername(User.Identity.Name);
+            if (customer == null || purchase.CustomerId != customer.Id)
+            {
+                return new HttpUnauthorizedResult();
+            }
+            
             return View(purchase);
         }
         
-        // Получение количества товаров в корзине
-        [ChildActionOnly]
-        public ActionResult CartSummary()
-        {
-            ViewBag.CartCount = GetCartCount();
-            return PartialView("_CartSummary");
-        }
-        
-        // Методы для работы с корзиной в сессии
         private List<CartItem> GetCartItems()
         {
-            var cartJson = Session[CartSessionKey] as string;
-            if (string.IsNullOrEmpty(cartJson))
+            var cartItemsJson = Session[CartSessionKey] as string;
+            if (string.IsNullOrEmpty(cartItemsJson))
             {
                 return new List<CartItem>();
             }
             
-            return JsonConvert.DeserializeObject<List<CartItem>>(cartJson);
+            try
+            {
+                return JsonConvert.DeserializeObject<List<CartItem>>(cartItemsJson) ?? new List<CartItem>();
+            }
+            catch
+            {
+                return new List<CartItem>();
+            }
         }
         
         private void SaveCartItems(List<CartItem> cartItems)
         {
-            var cartJson = JsonConvert.SerializeObject(cartItems);
-            Session[CartSessionKey] = cartJson;
+            Session[CartSessionKey] = JsonConvert.SerializeObject(cartItems);
         }
-        
-        private int GetCartCount()
-        {
-            return GetCartItems().Sum(i => i.Quantity);
-        }
-        
-        private decimal GetCartTotal()
-        {
-            var cartItems = GetCartItems();
-            if (cartItems.Count == 0)
-            {
-                return 0;
-            }
-            
-            var productIds = cartItems.Select(i => i.ProductId).ToList();
-            var products = _db.Products
-                .Where(p => productIds.Contains(p.Id))
-                .ToList();
-            
-            decimal total = 0;
-            foreach (var item in cartItems)
-            {
-                var product = products.FirstOrDefault(p => p.Id == item.ProductId);
-                if (product != null)
-                {
-                    total += (product.DiscountPrice ?? product.Price) * item.Quantity;
-                }
-            }
-            
-            return total;
-        }
-        
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _db.Dispose();
+                (_productBL as IDisposable)?.Dispose();
+                (_customerBL as IDisposable)?.Dispose();
+                (_purchaseBL as IDisposable)?.Dispose();
             }
             base.Dispose(disposing);
         }
     }
     
-    // Вспомогательные классы для работы с корзиной
     public class CartItem
     {
         public int ProductId { get; set; }
         public int Quantity { get; set; }
-    }
-    
-    // Класс для десериализации товаров из JavaScript корзины
-    public class CartItemJS
-    {
-        public int id { get; set; }
-        public string name { get; set; }
-        public decimal price { get; set; }
-        public int qty { get; set; }
-        public string image { get; set; }
     }
     
     public class CartItemViewModel
@@ -560,10 +404,10 @@ namespace BeautyMoldova.Controllers
         public string LastName { get; set; }
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
-        public string ShippingAddress { get; set; }
-        public string BillingAddress { get; set; }
         public string PaymentMethod { get; set; }
         public string ShippingMethod { get; set; }
+        public string ShippingAddress { get; set; }
+        public string BillingAddress { get; set; }
         public string Notes { get; set; }
     }
 } 

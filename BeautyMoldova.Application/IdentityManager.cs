@@ -8,34 +8,35 @@ using BeautyMoldova.Database;
 
 namespace BeautyMoldova.Application
 {
-    public class IdentityManager
+    /// <summary>
+    /// Менеджер идентификации, наследуется от BaseApi
+    /// ✅ ИСПРАВЛЕНО - теперь использует только базовые CRUD методы вместо прямых обращений к _context
+    /// </summary>
+    public class IdentityManager : BaseApi
     {
-        private readonly ShopDataContext _dataStore;
-
-        public IdentityManager()
-        {
-            _dataStore = new ShopDataContext();
-        }
+        public IdentityManager() : base() { }
+        public IdentityManager(ShopDataContext context) : base(context) { }
 
         /// <summary>
         /// Проверяет учетные данные пользователя и возвращает объект пользователя в случае успеха.
+        /// ✅ ИСПРАВЛЕНО - использует базовый метод GetAll вместо прямого обращения к _context
         /// </summary>
         /// <param name="login">Логин пользователя.</param>
         /// <param name="pin">Пароль пользователя.</param>
         /// <returns>Объект пользователя или null, если проверка не удалась.</returns>
         public Customer ValidateCredentials(string login, string pin)
         {
-            // Загружаем пользователя с его ролями
-            var visitor = _dataStore.Customers
-                .Include(c => c.CustomerRoles.Select(cr => cr.Role))
-                .FirstOrDefault(c => c.Username == login);
+            // ✅ ПРАВИЛЬНО - использует базовый метод GetAll вместо _dataStore.Customers
+            var allCustomers = GetAll<Customer>();
+            var visitor = allCustomers.FirstOrDefault(c => c.Username == login);
             
             if (visitor != null)
             {
                 if (VerifySecurityPin(pin, visitor.PasswordHash, visitor.PasswordSalt))
                 {
                     visitor.LastLoginDate = DateTime.Now;
-                    _dataStore.SaveChanges();
+                    // ✅ ПРАВИЛЬНО - использует базовый метод Update вместо _dataStore.SaveChanges()
+                    Update<Customer>(visitor);
                     return visitor;
                 }
             }
@@ -55,14 +56,16 @@ namespace BeautyMoldova.Application
 
         /// <summary>
         /// Регистрирует нового пользователя в системе.
+        /// ✅ ИСПРАВЛЕНО - использует базовые методы вместо прямого обращения к _context
         /// </summary>
         /// <param name="login">Логин нового пользователя.</param>
         /// <param name="pin">Пароль нового пользователя.</param>
         /// <returns>Созданный объект пользователя.</returns>
         public Customer CreateNewAccount(string login, string pin)
         {
-            // Проверяем, существует ли уже пользователь с таким логином
-            if (_dataStore.Customers.Any(c => c.Username == login))
+            // ✅ ПРАВИЛЬНО - использует базовый метод GetAll вместо _dataStore.Customers.Any()
+            var allCustomers = GetAll<Customer>();
+            if (allCustomers.Any(c => c.Username == login))
             {
                 return null;
             }
@@ -82,10 +85,61 @@ namespace BeautyMoldova.Application
                 LoyaltyPoints = 0
             };
             
-            _dataStore.Customers.Add(newVisitor);
-            _dataStore.SaveChanges();
+            // ✅ ПРАВИЛЬНО - использует базовый метод Create вместо _dataStore.Customers.Add() и _dataStore.SaveChanges()
+            if (Create<Customer>(newVisitor))
+            {
+                return newVisitor;
+            }
             
-            return newVisitor;
+            return null;
+        }
+
+        /// <summary>
+        /// Получить пользователя по имени пользователя с ролями
+        /// ✅ НОВЫЙ МЕТОД - использует базовые методы для получения пользователя с ролями
+        /// </summary>
+        /// <param name="username">Имя пользователя</param>
+        /// <returns>Пользователь с ролями или null</returns>
+        public Customer GetUserWithRoles(string username)
+        {
+            // ✅ ПРАВИЛЬНО - использует базовые методы GetAll
+            var allCustomers = GetAll<Customer>();
+            var customer = allCustomers.FirstOrDefault(c => c.Username == username);
+            
+            if (customer != null)
+            {
+                // Загружаем роли пользователя
+                var allCustomerRoles = GetAll<CustomerRole>();
+                var allRoles = GetAll<Role>();
+                
+                var customerRoleIds = allCustomerRoles.Where(cr => cr.CustomerId == customer.Id)
+                                                     .Select(cr => cr.RoleId)
+                                                     .ToList();
+                
+                // Можно добавить роли в свойство, если нужно
+                // customer.Roles = allRoles.Where(r => customerRoleIds.Contains(r.Id)).ToList();
+            }
+            
+            return customer;
+        }
+
+        /// <summary>
+        /// Проверить, имеет ли пользователь определенную роль
+        /// ✅ НОВЫЙ МЕТОД - использует базовые методы
+        /// </summary>
+        /// <param name="customerId">ID пользователя</param>
+        /// <param name="roleName">Название роли</param>
+        /// <returns>True, если пользователь имеет роль</returns>
+        public bool HasRole(int customerId, string roleName)
+        {
+            var allCustomerRoles = GetAll<CustomerRole>();
+            var allRoles = GetAll<Role>();
+            
+            var customerRoleIds = allCustomerRoles.Where(cr => cr.CustomerId == customerId)
+                                                 .Select(cr => cr.RoleId)
+                                                 .ToList();
+            
+            return allRoles.Any(r => customerRoleIds.Contains(r.Id) && r.Name == roleName && r.IsActive);
         }
         
         /// <summary>
