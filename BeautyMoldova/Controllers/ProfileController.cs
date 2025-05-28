@@ -3,6 +3,8 @@ using System.Web;
 using System.Web.Mvc;
 using System.Web.Security;
 using BeautyMoldova.Application;
+using BeautyMoldova.Application.Interfaces;
+using BeautyMoldova.Application.BusinessLogic;
 using BeautyMoldova.Domain.Models;
 using System.Linq;
 
@@ -11,10 +13,12 @@ namespace CosmeticShop.Controllers
     public class ProfileController : Controller
     {
         private readonly IdentityManager _identityManager;
+        private readonly ICustomerBL _customerBL;
 
         public ProfileController()
         {
             _identityManager = new IdentityManager();
+            _customerBL = new CustomerBL();
         }
 
         // GET: Страница входа в систему
@@ -105,15 +109,12 @@ namespace CosmeticShop.Controllers
         {
             try
             {
-                // Получаем все роли пользователя и объединяем их через запятую
-                // Это необходимо для корректной работы User.IsInRole
                 string roles = customer.AccessLevel;
                 
-                // Если есть доступ к ролям через связанную сущность CustomerRoles
-                if (customer.CustomerRoles != null && customer.CustomerRoles.Any())
+                var customerRoles = _customerBL.GetCustomerRoles(customer.Id);
+                if (customerRoles != null && customerRoles.Any())
                 {
-                    // Добавляем названия ролей из связанной таблицы
-                    var roleNames = customer.CustomerRoles.Select(cr => cr.Role.Name);
+                    var roleNames = customerRoles.Select(r => r.Name);
                     roles = string.Join(",", roleNames);
                 }
                 
@@ -123,7 +124,7 @@ namespace CosmeticShop.Controllers
                     DateTime.Now,
                     DateTime.Now.AddMinutes(30),
                     true,
-                    roles,  // Используем строку с ролями вместо просто AccessLevel
+                    roles,
                     "/");
 
                 var secureTicket = FormsAuthentication.Encrypt(sessionTicket);
@@ -135,6 +136,16 @@ namespace CosmeticShop.Controllers
                 Console.WriteLine(e);
                 throw;
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                (_identityManager as IDisposable)?.Dispose();
+                (_customerBL as IDisposable)?.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
     
@@ -154,7 +165,6 @@ namespace CosmeticShop.Controllers
         {
             if (filterContext.HttpContext.User.Identity.IsAuthenticated)
             {
-                // Пользователь аутентифицирован, но не имеет нужной роли
                 filterContext.Result = new RedirectToRouteResult(
                     new System.Web.Routing.RouteValueDictionary
                     {
@@ -164,7 +174,6 @@ namespace CosmeticShop.Controllers
             }
             else
             {
-                // Пользователь вообще не аутентифицирован
                 base.HandleUnauthorizedRequest(filterContext);
             }
         }

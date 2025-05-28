@@ -53,10 +53,16 @@
         <Compile Include="Interfaces\ICategoryBL.cs" />
         <Compile Include="Interfaces\ICustomerBL.cs" />
         <Compile Include="Interfaces\IPurchaseBL.cs" />
+        <Compile Include="Interfaces\IPromotionBL.cs" />
+        <Compile Include="Interfaces\INotificationBL.cs" />
+        <Compile Include="Interfaces\IReviewBL.cs" />
         <Compile Include="BusinessLogic\ProductBL.cs" />
         <Compile Include="BusinessLogic\CategoryBL.cs" />
         <Compile Include="BusinessLogic\CustomerBL.cs" />
         <Compile Include="BusinessLogic\PurchaseBL.cs" />
+        <Compile Include="BusinessLogic\PromotionBL.cs" />
+        <Compile Include="BusinessLogic\NotificationBL.cs" />
+        <Compile Include="BusinessLogic\ReviewBL.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
     <ItemGroup>

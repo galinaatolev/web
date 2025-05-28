@@ -1,41 +1,39 @@
 using System;
-using System.Data.Entity;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Mvc;
-using BeautyMoldova.Database;
+using BeautyMoldova.Application.Interfaces;
+using BeautyMoldova.Application.BusinessLogic;
 using BeautyMoldova.Domain.Models;
 
 namespace BeautyMoldova.Controllers
 {
     public class PromotionController : Controller
     {
-        private readonly ShopDataContext _db;
+        private readonly IPromotionBL _promotionBL;
+        private readonly ICategoryBL _categoryBL;
 
         public PromotionController()
         {
-            _db = new ShopDataContext();
+            _promotionBL = new PromotionBL();
+            _categoryBL = new CategoryBL();
         }
         
         // Список всех акций
-        public async Task<ActionResult> Index()
+        public ActionResult Index()
         {
-            var activePromotions = await _db.Promotions
-                .Where(p => p.IsActive && p.EndDate >= DateTime.Now)
-                .OrderBy(p => p.EndDate)
-                .ToListAsync();
+            var activePromotions = _promotionBL.GetActivePromotions();
             
             return View(activePromotions);
         }
         
         // Детальная страница акции
-        public async Task<ActionResult> Details(int id)
+        public ActionResult Details(int id)
         {
-            var promotion = await _db.Promotions
-                .Include(p => p.PromotionProducts.Select(pp => pp.Product.Manufacturer))
-                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
+            var promotion = _promotionBL.GetPromotionById(id);
             
-            if (promotion == null)
+            if (promotion == null || !promotion.IsActive)
             {
                 return HttpNotFound();
             }
@@ -50,43 +48,29 @@ namespace BeautyMoldova.Controllers
         }
         
         // Список товаров со скидкой
-        public async Task<ActionResult> Discounts(int? categoryId = null, int page = 1)
+        public ActionResult Discounts(int? categoryId = null, int page = 1)
         {
             ViewBag.Title = "Товары со скидкой";
             
-            var productsQuery = _db.Products
-                .Where(p => p.IsAvailable && p.DiscountPrice.HasValue)
-                .AsQueryable();
-            
-            if (categoryId.HasValue)
-            {
-                productsQuery = productsQuery.Where(p => p.CategoryId == categoryId.Value);
-                var category = await _db.Categories.FindAsync(categoryId.Value);
-                ViewBag.CategoryName = category?.Name;
-            }
-            
-            // Сортируем по размеру скидки (по убыванию процента скидки)
-            productsQuery = productsQuery.OrderByDescending(p => 
-                (p.Price - p.DiscountPrice.Value) / p.Price * 100);
-            
-            // Пагинация
-            int pageSize = 12;
-            int totalItems = await productsQuery.CountAsync();
-            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+            const int pageSize = 12;
+            var totalItems = _promotionBL.GetDiscountedProductsCount(categoryId);
+            var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
             
             if (page < 1) page = 1;
             if (page > totalPages && totalPages > 0) page = totalPages;
             
-            var products = await productsQuery
-                .Include(p => p.Manufacturer)
-                .Include(p => p.Category)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+            var products = _promotionBL.GetPagedDiscountedProducts(page, pageSize, categoryId);
             
             // Подготовка данных для фильтров
-            ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.DisplayOrder).ToListAsync();
+            var categories = _categoryBL.GetAllCategories().Where(c => c.IsActive).OrderBy(c => c.DisplayOrder).ToList();
             
+            if (categoryId.HasValue)
+            {
+                var category = _categoryBL.GetCategoryById(categoryId.Value);
+                ViewBag.CategoryName = category?.Name;
+            }
+            
+            ViewBag.Categories = categories;
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = totalPages;
             ViewBag.TotalItems = totalItems;
@@ -97,7 +81,7 @@ namespace BeautyMoldova.Controllers
         
         // Поиск по акциям
         [HttpPost]
-        public async Task<ActionResult> Search(string query)
+        public ActionResult Search(string query)
         {
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -106,13 +90,7 @@ namespace BeautyMoldova.Controllers
             
             query = query.ToLower();
             
-            var promotions = await _db.Promotions
-                .Where(p => p.IsActive && p.EndDate >= DateTime.Now &&
-                           (p.Title.ToLower().Contains(query) || 
-                            p.Description.ToLower().Contains(query) ||
-                            p.PromoCode.ToLower().Contains(query)))
-                .OrderBy(p => p.EndDate)
-                .ToListAsync();
+            var promotions = _promotionBL.SearchPromotions(query);
             
             ViewBag.SearchQuery = query;
             return View("Index", promotions);
@@ -122,7 +100,8 @@ namespace BeautyMoldova.Controllers
         {
             if (disposing)
             {
-                _db.Dispose();
+                (_promotionBL as IDisposable)?.Dispose();
+                (_categoryBL as IDisposable)?.Dispose();
             }
             base.Dispose(disposing);
         }

@@ -1,27 +1,34 @@
 using System;
-using System.Data.Entity;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Mvc;
-using BeautyMoldova.Database;
+using BeautyMoldova.Application.Interfaces;
+using BeautyMoldova.Application.BusinessLogic;
 using BeautyMoldova.Domain.Models;
 
 namespace BeautyMoldova.Controllers
 {
     public class ReviewController : Controller
     {
-        private readonly ShopDataContext _db;
+        // ✅ ПРАВИЛЬНО - используем Business Logic вместо прямого контекста
+        private readonly IReviewBL _reviewBL;
+        private readonly IProductBL _productBL;
+        private readonly ICustomerBL _customerBL;
 
         public ReviewController()
         {
-            _db = new ShopDataContext();
+            _reviewBL = new ReviewBL();
+            _productBL = new ProductBL();
+            _customerBL = new CustomerBL();
         }
 
         // GET: /Review/Create/5 (где 5 - ID продукта)
         [Authorize]
-        public async Task<ActionResult> Create(int productId)
+        public ActionResult Create(int productId)
         {
-            var product = await _db.Products.FindAsync(productId);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var product = _productBL.GetProductById(productId);
             if (product == null)
             {
                 return HttpNotFound();
@@ -35,43 +42,45 @@ namespace BeautyMoldova.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Create(Review review)
+        public ActionResult Create(Review review)
         {
             if (!ModelState.IsValid)
             {
-                var product = await _db.Products.FindAsync(review.ProductId);
+                // ✅ ПРАВИЛЬНО - используем Business Logic
+                var product = _productBL.GetProductById(review.ProductId);
                 ViewBag.Product = product;
                 return View(review);
             }
 
             // Получаем текущего пользователя
             var username = User.Identity.Name;
-            var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return RedirectToAction("Login", "Profile", new { returnUrl = Url.Action("Create", "Review", new { productId = review.ProductId }) });
             }
 
+            // Проверяем, может ли клиент оставить отзыв
+            if (!_reviewBL.CanCustomerReview(customer.Id, review.ProductId))
+            {
+                TempData["ErrorMessage"] = "Вы уже оставляли отзыв на этот товар";
+                return RedirectToAction("ProductDetails", "Home", new { id = review.ProductId });
+            }
+
             // Заполняем информацию об отзыве
             review.CustomerId = customer.Id;
-            review.CreatedAt = DateTime.Now;
-            review.CreatedDate = DateTime.Now;
-            review.IsApproved = false; // Отзыв требует одобрения администратором
-            review.IsDeleted = false;
-            review.HelpfulVotes = 0;
-            review.UnhelpfulVotes = 0;
 
-            // Проверяем, покупал ли пользователь этот товар
-            var hasPurchased = await _db.PurchaseItems
-                .Where(pi => pi.Product.Id == review.ProductId)
-                .Where(pi => pi.Purchase.Customer.Id == customer.Id)
-                .AnyAsync();
-
-            review.IsVerifiedPurchase = hasPurchased;
-
-            _db.Reviews.Add(review);
-            await _db.SaveChangesAsync();
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            if (_reviewBL.CreateReview(review))
+            {
+                TempData["SuccessMessage"] = "Ваш отзыв отправлен на модерацию";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Ошибка при создании отзыва";
+            }
 
             return RedirectToAction("ProductDetails", "Home", new { id = review.ProductId });
         }
@@ -80,11 +89,10 @@ namespace BeautyMoldova.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Delete(int id)
+        public ActionResult Delete(int id)
         {
-            var review = await _db.Reviews
-                .Include(r => r.Customer)
-                .FirstOrDefaultAsync(r => r.Id == id);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var review = _reviewBL.GetReviewById(id);
 
             if (review == null)
             {
@@ -94,7 +102,7 @@ namespace BeautyMoldova.Controllers
             // Проверяем, является ли текущий пользователь автором отзыва или администратором
             var username = User.Identity.Name;
             var isAdmin = User.IsInRole("Admin");
-            var isAuthor = review.Customer.Username == username;
+            var isAuthor = _reviewBL.IsReviewOwnedByCustomer(id, _customerBL.GetCustomerByUsername(username)?.Id ?? 0);
 
             if (!isAdmin && !isAuthor)
             {
@@ -102,50 +110,50 @@ namespace BeautyMoldova.Controllers
             }
 
             // Помечаем отзыв как удаленный вместо физического удаления
-            review.IsDeleted = true;
-            await _db.SaveChangesAsync();
+            if (_reviewBL.SoftDeleteReview(id))
+            {
+                TempData["SuccessMessage"] = "Отзыв удален";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Ошибка при удалении отзыва";
+            }
 
             return RedirectToAction("ProductDetails", "Home", new { id = review.ProductId });
         }
 
         // AJAX: Голосование за полезность отзыва
         [HttpPost]
-        public async Task<ActionResult> VoteHelpful(int reviewId, bool isHelpful)
+        public ActionResult VoteHelpful(int reviewId, bool isHelpful)
         {
             if (!User.Identity.IsAuthenticated)
             {
                 return Json(new { success = false, redirectToLogin = true, loginUrl = Url.Action("Login", "Profile", new { returnUrl = Request.UrlReferrer.ToString() }) });
             }
 
-            var review = await _db.Reviews.FindAsync(reviewId);
-            if (review == null)
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            if (_reviewBL.VoteHelpful(reviewId, isHelpful))
             {
-                return Json(new { success = false, message = "Review not found" });
-            }
-
-            if (isHelpful)
-            {
-                review.HelpfulVotes = (review.HelpfulVotes ?? 0) + 1;
+                var review = _reviewBL.GetReviewById(reviewId);
+                return Json(new { 
+                    success = true, 
+                    helpfulVotes = review.HelpfulVotes, 
+                    unhelpfulVotes = review.UnhelpfulVotes 
+                });
             }
             else
             {
-                review.UnhelpfulVotes = (review.UnhelpfulVotes ?? 0) + 1;
+                return Json(new { success = false, message = "Review not found" });
             }
-
-            await _db.SaveChangesAsync();
-
-            return Json(new { 
-                success = true, 
-                helpfulVotes = review.HelpfulVotes, 
-                unhelpfulVotes = review.UnhelpfulVotes 
-            });
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _db.Dispose();
+                (_reviewBL as IDisposable)?.Dispose();
+                (_productBL as IDisposable)?.Dispose();
+                (_customerBL as IDisposable)?.Dispose();
             }
             base.Dispose(disposing);
         }

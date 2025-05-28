@@ -1,9 +1,10 @@
 using System;
-using System.Data.Entity;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Mvc;
-using BeautyMoldova.Database;
+using BeautyMoldova.Application.Interfaces;
+using BeautyMoldova.Application.BusinessLogic;
 using BeautyMoldova.Domain.Models;
 
 namespace BeautyMoldova.Controllers
@@ -11,49 +12,48 @@ namespace BeautyMoldova.Controllers
     [Authorize]
     public class NotificationController : Controller
     {
-        private readonly ShopDataContext _db;
+        // ✅ ПРАВИЛЬНО - используем Business Logic вместо прямого контекста
+        private readonly INotificationBL _notificationBL;
+        private readonly ICustomerBL _customerBL;
 
         public NotificationController()
         {
-            _db = new ShopDataContext();
+            _notificationBL = new NotificationBL();
+            _customerBL = new CustomerBL();
         }
         
         // Список уведомлений пользователя
-        public async Task<ActionResult> Index()
+        public ActionResult Index()
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return RedirectToAction("Enter", "Profile");
             }
             
-            var notifications = await _db.Notifications
-                .Where(n => n.CustomerId == customer.Id)
-                .OrderByDescending(n => n.CreatedDate)
-                .ToListAsync();
+            var notifications = _notificationBL.GetCustomerNotifications(customer.Id);
             
             return View(notifications);
         }
         
         // Детали уведомления
-        public async Task<ActionResult> Details(int id)
+        public ActionResult Details(int id)
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return RedirectToAction("Enter", "Profile");
             }
             
-            var notification = await _db.Notifications
-                .FirstOrDefaultAsync(n => n.Id == id && n.CustomerId == customer.Id);
+            var notification = _notificationBL.GetNotificationById(id);
             
-            if (notification == null)
+            if (notification == null || notification.CustomerId != customer.Id)
             {
                 return HttpNotFound();
             }
@@ -61,9 +61,7 @@ namespace BeautyMoldova.Controllers
             // Отмечаем уведомление как прочитанное
             if (!notification.IsRead)
             {
-                notification.IsRead = true;
-                notification.ReadDate = DateTime.Now;
-                await _db.SaveChangesAsync();
+                _notificationBL.MarkNotificationAsRead(id);
             }
             
             return View(notification);
@@ -71,20 +69,18 @@ namespace BeautyMoldova.Controllers
         
         // AJAX метод для получения новых уведомлений
         [HttpGet]
-        public async Task<JsonResult> GetNewNotifications()
+        public JsonResult GetNewNotifications()
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return Json(new { success = false }, JsonRequestBehavior.AllowGet);
             }
             
-            var newNotifications = await _db.Notifications
-                .Where(n => n.CustomerId == customer.Id && !n.IsRead)
-                .OrderByDescending(n => n.CreatedDate)
+            var newNotifications = _notificationBL.GetUnreadNotifications(customer.Id)
                 .Select(n => new {
                     n.Id,
                     n.Title,
@@ -92,7 +88,7 @@ namespace BeautyMoldova.Controllers
                     n.Type,
                     CreatedDate = n.CreatedDate.ToString("dd.MM.yyyy HH:mm")
                 })
-                .ToListAsync();
+                .ToList();
             
             return Json(new { 
                 success = true, 
@@ -104,84 +100,84 @@ namespace BeautyMoldova.Controllers
         // Отметить все уведомления как прочитанные
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> MarkAllAsRead()
+        public ActionResult MarkAllAsRead()
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return RedirectToAction("Enter", "Profile");
             }
             
-            var unreadNotifications = await _db.Notifications
-                .Where(n => n.CustomerId == customer.Id && !n.IsRead)
-                .ToListAsync();
-            
-            foreach (var notification in unreadNotifications)
+            if (_notificationBL.MarkAllNotificationsAsRead(customer.Id))
             {
-                notification.IsRead = true;
-                notification.ReadDate = DateTime.Now;
+                TempData["SuccessMessage"] = "Все уведомления отмечены как прочитанные";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Ошибка при обновлении уведомлений";
             }
             
-            await _db.SaveChangesAsync();
-            
-            TempData["SuccessMessage"] = "Все уведомления отмечены как прочитанные";
             return RedirectToAction("Index");
         }
         
         // Удаление уведомления
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Delete(int id)
+        public ActionResult Delete(int id)
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return RedirectToAction("Enter", "Profile");
             }
             
-            var notification = await _db.Notifications
-                .FirstOrDefaultAsync(n => n.Id == id && n.CustomerId == customer.Id);
-            
-            if (notification == null)
+            // Проверяем принадлежность уведомления пользователю
+            if (!_notificationBL.IsNotificationOwnedByCustomer(id, customer.Id))
             {
                 return HttpNotFound();
             }
             
-            _db.Notifications.Remove(notification);
-            await _db.SaveChangesAsync();
+            if (_notificationBL.DeleteNotification(id))
+            {
+                TempData["SuccessMessage"] = "Уведомление удалено";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Ошибка при удалении уведомления";
+            }
             
-            TempData["SuccessMessage"] = "Уведомление удалено";
             return RedirectToAction("Index");
         }
         
         // Удаление всех уведомлений
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> DeleteAll()
+        public ActionResult DeleteAll()
         {
             var username = User.Identity.Name;
-            var customer = await _db.Customers
-                .FirstOrDefaultAsync(c => c.Username == username);
+            // ✅ ПРАВИЛЬНО - используем Business Logic
+            var customer = _customerBL.GetCustomerByUsername(username);
             
             if (customer == null)
             {
                 return RedirectToAction("Enter", "Profile");
             }
             
-            var notifications = await _db.Notifications
-                .Where(n => n.CustomerId == customer.Id)
-                .ToListAsync();
+            if (_notificationBL.DeleteAllNotifications(customer.Id))
+            {
+                TempData["SuccessMessage"] = "Все уведомления удалены";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Ошибка при удалении уведомлений";
+            }
             
-            _db.Notifications.RemoveRange(notifications);
-            await _db.SaveChangesAsync();
-            
-            TempData["SuccessMessage"] = "Все уведомления удалены";
             return RedirectToAction("Index");
         }
         
@@ -189,7 +185,8 @@ namespace BeautyMoldova.Controllers
         {
             if (disposing)
             {
-                _db.Dispose();
+                (_notificationBL as IDisposable)?.Dispose();
+                (_customerBL as IDisposable)?.Dispose();
             }
             base.Dispose(disposing);
         }
